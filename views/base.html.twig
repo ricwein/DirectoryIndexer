@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="user-scalable=0, minimum-scale=1, maximum-scale=1, initial-scale=1, width=device-width"/>
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        {# The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags #}
+
+        {# Document Title #}
+        <title>{% block title %}{{ template.name | lower }}{% endblock %}</title>
+        <meta name="description" content="{{ config.name }}">
+        <meta name=robots content="index, follow">
+
+        {# Base URL to use for all relative URLs contained within the document #}
+        <base href="{{ url.base }}">
+
+        {# mobile-friendly meta-data collection #}
+        {% set name = 'index' %}
+        {% include 'head_meta.html.twig' with {'name': name, 'url': url} only %}
+
+        {# favicons #}
+        <link rel="shortcut icon" href="{{ url.base }}/favicon.ico"/>
+        <link rel="icon" type="image/png" sizes="64x64" href="{{ url.base }}/favicon.png"/>
+
+        {# stylesheet assets #}
+        {% if config.development %}
+            {{ asset('/libs/bulma/css/bulma.css', 'preload:withFallback') }}
+        {% else %}
+            {{ asset('/libs/bulma/css/bulma.min.css', 'preload:withFallback') }}
+        {% endif %}
+        {{ asset('/scss/style.scss', 'preload:withFallback') }}
+        {{ asset('/libs/font-awesome/css/all.css', 'preload:withFallback') }}
+
+    {% endblock %}
+</head>
+
+<body class="has-navbar-fixed-top">
+{% block body %}
+    <div id="header">
+        {% block header %}
+            {% block navbar %}
+                <nav class="navbar main-nav is-fixed-top" role="navigation" aria-label="main navigation">
+                    <div class="container is-fluid">
+
+                        <div class="navbar-brand">
+                            <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+                                <span aria-hidden="true"></span>
+                                <span aria-hidden="true"></span>
+                                <span aria-hidden="true"></span>
+                            </a>
+                        </div>
+
+                        <div id="navbarMenu" class="navbar-menu">
+                            <div class="navbar-start">
+                                <div class="navbar-item">
+                                    <div class="buttons title is-5">
+                                        <a class="navbar-link is-arrowless logo" href="{{ url.base }}">
+                                            <strong>{% block site_title %}Index{% endblock %}</strong>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="navbar-end">
+
+                                {% block navbar_items %}
+                                    <form class="navbar-item field has-addons" method="get" action="{{ url.base }}/search/">
+                                        <div class="control has-icons-left">
+                                            <span class="icon is-left">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                            <label>
+                                                <input class="input" type="search" name="subject" placeholder="Search...">
+                                            </label>
+                                        </div>
+                                        <div class="control">
+                                            <button type="submit" class="button is-link">Go</button>
+                                        </div>
+                                    </form>
+                                {% endblock %}
+
+                            </div>
+                        </div>
+
+                    </div>
+                </nav>
+            {% endblock %}
+
+        {% endblock %}
+    </div>
+
+    {% block main %}
+    {% endblock %}
+
+    {# section for late-loading scripts etc. #}
+    {% block footer %}
+    {% endblock %}
+
+    {{ asset('/js/navbar.js') }}
+{% endblock %}
+</body>
+</html>
+

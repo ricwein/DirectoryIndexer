@@ -1,0 +1,6 @@
+[submodule "assets/libs/bulma"]
+	path = assets/libs/bulma
+	url = https://github.com/jgthms/bulma.git
+[submodule "assets/libs/font-awesome"]
+	path = assets/libs/font-awesome
+	url = https://github.com/FortAwesome/Font-Awesome.git

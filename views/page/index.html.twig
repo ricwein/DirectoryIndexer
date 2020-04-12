@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+
+{% block site_title %}
+    Index of <span class="path">{{ index.relativePath() }}</span>
+{% endblock %}
+
+{% block main %}
+    <div class="container is-fluid index">
+        <table class="table is-hoverable is-fullwidth">
+            <thead>
+            <tr>
+                <th colspan="2">name</th>
+                <th>type</th>
+                <th>last modified</th>
+                <th>size</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            {% if not(index.isRoot()) %}
+                <tr>
+                    <td>
+                        <i class="fas fa-arrow-up"></i>
+                    </td>
+                    <td colspan="4">
+                        <a href="{{ url.base }}{{ index.relativePathUp() }}">
+                            <span class="filename">../</span>
+                        </a>
+                    </td>
+                </tr>
+            {% endif %}
+
+            {% for file in index.list() %}
+                <tr>
+                    {% if file.isDir() %}
+
+                        <td>
+                            <i class="fas fa-folder"></i>
+                        </td>
+
+                        <td>
+                            <a href="{{ url.current }}/{{ file.path().basename | url_encode }}">
+                                {{ file.path().basename ~ '/' }}
+                            </a>
+                        </td>
+
+                        <td>
+                            folder
+                        </td>
+
+                        <td>
+                            {{ file.getTime | date('d.m.Y H:i:s') }}
+                        </td>
+
+                        <td>
+                            -
+                        </td>
+
+
+                    {% else %}
+
+                        <td>
+                            {#                            <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
+                            <i class="fas fa-file"></i>
+                        </td>
+
+                        <td>
+                            <a href="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                                <span class="filename">{{ file.path().filename }}</span>
+                            </a>
+                        </td>
+
+                        <td>
+                            file
+                        </td>
+
+                        <td>
+                            {{ file.getTime | date('d.m.Y H:i:s') }}
+                        </td>
+
+                        <td>
+                            {{ file.getSize() | format_bytes(0) }}
+                        </td>
+
+
+                    {% endif %}
+                </tr>
+
+            {% else %}
+
+                <li class="list-item">
+                    <p>nothing here</p>
+                </li>
+            {% endfor %}
+
+            </tbody>
+        </table>
+
+        {% set readmeFile = index.dir().file('README.md') %}
+        {% if readmeFile.isFile() %}
+            {% cache 'readme_md_' ~ readmeFile.path().real %}
+                <div class="content">
+                    <h1 class="title">README.md</h1>
+                    <div class="box">
+                        {{ readmeFile.read() | render_markdown() }}
+                    </div>
+                </div>
+            {% endcache %}
+        {% endif %}
+    </div>
+
+{% endblock %}

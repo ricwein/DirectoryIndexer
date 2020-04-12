@@ -1,0 +1,8 @@
+{% for (agent, paths) in robots.rules %}
+User-agent: {{ agent }}
+Allow: /
+{% for path in paths %}Disallow: {{ path }}{% endfor %}
+{% endfor %}
+
+User-agent: *
+Allow: /
