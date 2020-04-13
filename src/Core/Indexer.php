@@ -20,10 +20,7 @@ class Indexer
     private Config $config;
     private Directory $directory;
     private Directory $rootDir;
-    private ?Cache $cache = null;
-
-    public const FILEIGNORE_FILENAME = '.indexignore';
-    public const FILEFORBIDDEN_FILENAME = '.indexforbidden';
+    private PathIgnore $pathIgnore;
 
     /**
      * Indexer constructor.
@@ -37,7 +34,8 @@ class Indexer
         $this->rootDir = $rootDir;
         $this->directory = $dir;
         $this->config = $config;
-        $this->cache = $cache;
+
+        $this->pathIgnore = new PathIgnore($this->rootDir, $this->config, $cache);
     }
 
     public function dir(): Directory
@@ -94,21 +92,18 @@ class Indexer
     /**
      * @return Generator
      * @throws AccessDeniedException
-     * @throws UnexpectedValueException
      * @throws Exception
+     * @throws UnexpectedValueException
      * @throws UnsupportedException
      */
     public function list(): Generator
     {
-        yield from $this->directory
+        $iterator = $this->directory
             ->list(false)
-            ->filterStorage([$this, 'filterFileStorage'])
-            ->dirs();
+            ->filterStorage([$this, 'filterFileStorage']);
 
-        yield from $this->directory
-            ->list(false)
-            ->filterStorage([$this, 'filterFileStorage'])
-            ->files();
+        yield from $iterator->dirs();
+        yield from $iterator->files();
     }
 
     /**
@@ -116,6 +111,7 @@ class Indexer
      * @return bool
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
+     * @internal
      */
     public function filterFileStorage(Storage\Disk $storage): bool
     {
@@ -127,15 +123,11 @@ class Indexer
             return false;
         }
 
-        if ($storage->path()->real === $sourcePath) {
+        if ($this->pathIgnore->isHidden($storage)) {
             return false;
         }
 
-        if ($storage->isDir()) {
-            return true;
-        }
-
-        if (in_array($storage->path()->filename, [static::FILEIGNORE_FILENAME, static::FILEFORBIDDEN_FILENAME], true)) {
+        if ($storage->path()->filename === PathIgnore::FILEIGNORE_FILENAME) {
             return false;
         }
 

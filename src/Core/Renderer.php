@@ -421,10 +421,12 @@ class Renderer
         }
 
         $storage = new Storage\Disk($rootDir, $path);
+        $pathIgnore = new PathIgnore($rootDir, $this->config, $this->cache);
 
-        if (!$storage->isReadable()) {
+        if (!$storage->isReadable() || $pathIgnore->isForbidden($storage)) {
             throw new FileNotFoundException("Unable to open or read file: {$path}", 404);
         }
+
 
         if ($storage->isFile()) {
             $this->displayPathFile(new File($storage));
