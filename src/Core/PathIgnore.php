@@ -10,6 +10,7 @@ use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\FileNotFoundException;
 use ricwein\FileSystem\Exceptions\RuntimeException;
+use ricwein\FileSystem\Exceptions\UnexpectedValueException as FileSystemUnexpectedValueException;
 use ricwein\FileSystem\File;
 use ricwein\FileSystem\Storage;
 use UnexpectedValueException;
@@ -18,17 +19,24 @@ class PathIgnore
 {
     public const FILEIGNORE_FILENAME = '.indexignore';
 
-    /** @var string File access is denied AND hidden */
-    public const TYPE_FORBIDDEN = 'deny';
+    private const ATTRIBUTE_VALUES = [
+        self::ATTRIBUTE_VISIBILITY_HIDE, self::ATTRIBUTE_VISIBILITY_SHOW,
+        self::ATTRIBUTE_ACCESS_DENY, self::ATTRIBUTE_ACCESS_ALLOW
+    ];
 
-    /** @var string File access is allowed BUT hidden */
-    public const TYPE_HIDDEN = 'hide';
+    public const ATTRIBUTE_VISIBILITY_HIDE = 'hide';
+    public const ATTRIBUTE_VISIBILITY_SHOW = 'show';
+    private const ATTRIBUTE_VISIBILITY = [
+        'name' => 'visible',
+        'values' => [self::ATTRIBUTE_VISIBILITY_HIDE => -1, self::ATTRIBUTE_VISIBILITY_SHOW => +1]
+    ];
 
-    /** @var string File access is denied BUT shown */
-    public const TYPE_SHOW = 'show';
-
-    /** @var string File access is allowed AND shown */
-    public const TYPE_ALLOW = 'allow';
+    public const ATTRIBUTE_ACCESS_DENY = 'deny';
+    public const ATTRIBUTE_ACCESS_ALLOW = 'allow';
+    private const ATTRIBUTE_ACCESS = [
+        'name' => 'access',
+        'values' => [self::ATTRIBUTE_ACCESS_DENY => -1, self::ATTRIBUTE_ACCESS_ALLOW => +1]
+    ];
 
     private ?Cache $cache;
     private Directory $rootDir;
@@ -90,9 +98,6 @@ class PathIgnore
     /**
      * @param Storage\Disk $storage Directory
      * @return array
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws FileNotFoundException
      * @throws RuntimeException
      */
     private function parseIndexIgnoreFiles(Storage\Disk $storage): array
@@ -112,90 +117,130 @@ class PathIgnore
             return $file->isFile() && $file->isReadable();
         });
 
+        $rulesets = [];
+        if (null !== $defaultIgnore = $this->config->defaultIndexIgnore) {
+            $rulesets[] = ['file' => null, 'rules' => $defaultIgnore];
+        }
+
+        /** @var array<string, string>[] $rulesets */
+        $rulesets = array_merge($rulesets, array_map(static function (File $file): array {
+            return [
+                'file' => $file,
+                'rules' => json_decode($file->read(), true, 512, JSON_THROW_ON_ERROR)
+            ];
+        }, $ignoreFiles));
+
         $rules = [];
 
-        /** @var File $file */
-        foreach ($ignoreFiles as $file) {
-
-            /** @var array<string, string> $rule */
-            $rule = json_decode($file->read(), true, 512, JSON_THROW_ON_ERROR);
+        /** @var array<string, string> $rule */
+        foreach ($rulesets as $ruleset) {
 
             // parse rules
-            foreach ($rule as $path => $type) {
+            foreach ($ruleset['rules'] as $pattern => $type) {
 
                 $type = strtolower(trim($type));
 
-                if (!in_array($type, [static::TYPE_ALLOW, static::TYPE_HIDDEN, static::TYPE_FORBIDDEN, static::TYPE_SHOW], true)) {
+                if (!in_array($type, static::ATTRIBUTE_VALUES, true)) {
                     throw new UnexpectedValueException(sprintf(
                         "Invalid attribute '%s' for path '%s'. Unable to parse %s.",
                         $type,
-                        $path,
-                        $file->path()->real,
+                        $pattern,
+                        $ruleset['file'] !== null ? $ruleset['file']->path()->real : '[default indexignore]',
                     ), 500);
                 }
 
-                $path = trim($path);
-                $pathRegex = str_replace('/', '\\/', $file->path()->directory);
+                $pattern = trim($pattern);
+                $path = $ruleset['file'] !== null ? $ruleset['file']->path()->directory : null;
 
-                if ($path === '/') {
-                    $rules["/{$pathRegex}(.*)/"] = $type;
-                    continue;
+                if (strpos($pattern, '/') === 0) {
+                    $rules["{$path}{$pattern}"] = $type;
+                } else {
+                    $rules["{$path}*/{$pattern}"] = $type;
                 }
 
-
-                $regex = str_replace([
-                    '/', '.', '/.', '*', '(.*)(.*)'
-                ], [
-                    '\\/', '\\.', '/\\.', '(.*)', '(.*)'
-                ], $path);
-
-                if (strpos($path, '/') !== 0) {
-                    $regex = "(.*)\/{$regex}";
-                    $rules["/{$pathRegex}\/{$regex}\/(.*)/"] = $type;
-                    $rules["/{$pathRegex}\/{$regex}/"] = $type;
-                    continue;
-                }
-
-                $rules["/{$pathRegex}{$regex}/"] = $type;
             }
         }
 
         return $rules;
     }
 
+    /**
+     * @param Storage\Disk $storage
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws PhpfastcacheInvalidArgumentException
+     * @throws RuntimeException
+     * @throws FileSystemUnexpectedValueException
+     */
     public function isHidden(Storage\Disk $storage): bool
     {
         $rules = $this->getMatchingAttributes($storage);
-        if (count($rules) < 1) {
-            return false;
-        }
-
-        $firstRule = array_shift($rules);
-        return in_array($firstRule, [static::TYPE_HIDDEN, static::TYPE_FORBIDDEN], true);
+        return $rules[static::ATTRIBUTE_VISIBILITY['name']] < 0 || $rules[static::ATTRIBUTE_ACCESS['name']] < 0;
     }
 
+    /**
+     * @param Storage\Disk $storage
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws FileSystemUnexpectedValueException
+     * @throws PhpfastcacheInvalidArgumentException
+     * @throws RuntimeException
+     */
     public function isForbidden(Storage\Disk $storage): bool
     {
         $rules = $this->getMatchingAttributes($storage);
-        if (count($rules) < 1) {
-            return false;
-        }
-
-        $firstRule = array_shift($rules);
-        return $firstRule === static::TYPE_FORBIDDEN;
+        return $rules[static::ATTRIBUTE_ACCESS['name']] < 0;
     }
 
+    /**
+     * @param Storage\Disk $storage
+     * @return array
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws PhpfastcacheInvalidArgumentException
+     * @throws RuntimeException
+     * @throws FileSystemUnexpectedValueException
+     */
     private function getMatchingAttributes(Storage\Disk $storage): array
     {
         $rules = $this->fetchRules($storage);
         $path = $storage->path()->real;
+        if ($storage->isDir()) {
+            $path = "{$path}/";
+        }
 
         $matchingRules = [];
-        foreach ($rules as $regex => $type) {
-            if (preg_match($regex, $path, $matches) === 1) {
-                $matchingRules[] = $type;
+        foreach ([static::ATTRIBUTE_ACCESS['name'], static::ATTRIBUTE_VISIBILITY['name']] as $type) {
+            $matchingRules[$type] = 0;
+        }
+
+        $counter = 0;
+        foreach ($rules as $pattern => $type) {
+
+            ++$counter;
+
+            if (!fnmatch($pattern, $path)) {
+                continue;
+            }
+
+            $priority = $counter;
+
+            switch (true) {
+                case array_key_exists($type, static::ATTRIBUTE_ACCESS['values']):
+                    $matchingRules[static::ATTRIBUTE_ACCESS['name']] += ($priority * static::ATTRIBUTE_ACCESS['values'][$type]);
+                    break;
+
+                case array_key_exists($type, static::ATTRIBUTE_VISIBILITY['values']):
+                    $matchingRules[static::ATTRIBUTE_VISIBILITY['name']] += ($priority * static::ATTRIBUTE_VISIBILITY['values'][$type]);
+                    break;
             }
         }
+
 
         return $matchingRules;
     }

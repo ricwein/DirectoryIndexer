@@ -411,6 +411,7 @@ class Renderer
     public function displayPath(string $path): void
     {
         $rootDir = new Directory(new Storage\Disk(__DIR__ . '/../../../'), Constraint::STRICT);
+
         if (!$rootDir->isDir() || !$rootDir->isReadable()) {
             throw new RuntimeException("Unable to read root directory: {$rootDir->path()->raw}", 500);
         }
@@ -479,7 +480,7 @@ class Renderer
 
         // parse http range request header
         $range = $this->http->get('HTTP_RANGE', Http::SERVER, null);
-        if (($range !== null) && preg_match('/bytes=\h*(\d+)-(\d*)[\D.*]?/i', $range, $matches)) {
+        if (($range !== null) && preg_match('/bytes=\h*(\d+)-(\d*)[\D.*]?/i', $range, $matches) === 1) {
             $rangeStart = (int)$matches[0];
 
             if (!empty($matches[1])) {
@@ -512,16 +513,29 @@ class Renderer
 
     /**
      * @param string $markdownString
+     * @param string|null $relativeUrl
      * @return string
      */
-    public function convertMarkdown(string $markdownString): string
+    public function convertMarkdown(string $markdownString, ?string $relativeUrl = null): string
     {
         $converter = new GithubFlavoredMarkdownConverter([
-            'html_input' => 'strip',
-            'allow_unsafe_links' => false,
+            'allow_unsafe_links' => true,
         ]);
 
-        return $converter->convertToHtml($markdownString);
+        $html = $converter->convertToHtml($markdownString);
+
+        if ($relativeUrl !== null) {
+            $relativeUrl = sprintf('%s/', rtrim(trim($relativeUrl, ' '), '/'));
+        }
+
+        // rewrite relative urls
+        $html = trim(str_replace([
+            '"./', '\'./'
+        ], [
+            "\"{$relativeUrl}", "'{$relativeUrl}"
+        ], $html));
+
+        return $html;
     }
 
     /**

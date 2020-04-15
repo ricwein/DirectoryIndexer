@@ -9,7 +9,7 @@
         {# The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags #}
 
         {# Document Title #}
-        <title>{% block title %}{{ template.name | lower }}{% endblock %}</title>
+        <title>{% block title %}{{ template.name | capitalize }}{% endblock %}</title>
         <meta name="description" content="{{ config.name }}">
         <meta name=robots content="index, follow">
 
@@ -55,11 +55,13 @@
                         <div id="navbarMenu" class="navbar-menu">
                             <div class="navbar-start">
                                 <div class="navbar-item">
-                                    <div class="buttons title is-5">
-                                        <a class="navbar-link is-arrowless logo" href="{{ url.base }}">
-                                            <strong>{% block site_title %}Index{% endblock %}</strong>
-                                        </a>
-                                    </div>
+                                    {% block site_title %}
+                                        <div class="buttons title is-5">
+                                            <a class="navbar-link is-arrowless logo" href="{{ url.base }}">
+                                                <strong>Index</strong>
+                                            </a>
+                                        </div>
+                                    {% endblock %}
                                 </div>
                             </div>
 

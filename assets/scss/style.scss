@@ -9,13 +9,14 @@
   color: black;
   font-weight: bold;
 
-  .path {
-    font-size: large;
-    color: darkgray;
+  .path.breadcrumb li a {
+    padding: 0;
   }
 }
 
 .container.index {
+  padding-top: 50px;
+
   table {
     tr td:first-of-type {
       width: 1px;
@@ -23,6 +24,50 @@
 
     a {
       color: black;
+    }
+  }
+}
+
+.is-debug-trace {
+  code {
+    padding: 0;
+    background-color: transparent;
+    color: black;
+    font-family: monospace;
+  }
+
+  pre.code-snippet {
+    white-space: nowrap;
+    word-break: break-word;
+    margin: 0;
+    padding-top: 0;
+    background-color: darken(white, 3%);
+
+    ol {
+      list-style-type: decimal;
+
+      li {
+        margin: 0 auto;
+        white-space: pre-wrap;
+        padding: 0 10px 0 10px;
+        color: lighten(gray, 25%);
+
+        & > span {
+          color: darken(gray, 25%);
+        }
+
+        &.dist-0 {
+          background-color: darken(mix(white, #FF0000, 0.8), 5%);
+        }
+
+        &.dist-1 {
+          background-color: darken(mix(white, #FF0000, 0.85), 3%);
+        }
+
+        &.dist-2 {
+          background-color: darken(mix(white, #FF0000, 0.9), 1%);
+        }
+      }
     }
   }
 }

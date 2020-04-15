@@ -1,1 +1,52 @@
-{{ exceptions | column('type') | dump }}
+{% extends 'error/base.html.twig' %}
+
+{% block error_title %}
+    {{ exceptions | first().code }}
+{% endblock %}
+
+{% block error_subtitle1 %}
+    {{ exceptions | first().type }}
+{% endblock %}
+
+{% block error_subtitle2 %}
+
+    {% if exceptions | first().code in [400] %}
+        <a class="button is-link" href="{{ url.referrer }}" onclick="history.go(-1);return false;"><i class="fas fa-chevron-left"></i>&nbsp; Go Back</a>
+    {% elseif exceptions | first().code in [404] %}
+        <a class="button is-link" href="{{ url.base }}"><i class="fas fa-home"></i>&nbsp; Go Home</a>
+    {% endif %}
+    <a class="button scroll-smooth" data-anchor="#debug-trace" href="{{ url.current }}#debug-trace"><i class="fas fa-arrow-down"></i></a>
+
+{% endblock %}
+
+{% block error_extended %}
+    <div class="container" style="margin-bottom: 50px">
+        <div id="debug-trace" class="box">
+            <div class="content">
+
+                <ul>
+                    {% for error in exceptions %}
+                        <li class="list-item">
+                            <h6 class="is-6">{{ error.code }} - {{ error.type }}</h6>
+
+                            <div>
+                                {{ error.message | escape }}<br>
+
+                                {# show template snippet if available #}
+                                {% if error.template is array %}
+                                    {% include 'error/modules/templateSnippet.html.twig' with {'template_error': error.template, 'linePadding': 10} only %}
+                                {% endif %}
+
+                                {# show exception stack-trace if development is enabled#}
+                                {% include 'error/modules/exceptionTrace.html.twig' with {'error': error} only %}
+
+                            </div>
+
+                        </li>
+                    {% endfor %}
+                </ul>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}

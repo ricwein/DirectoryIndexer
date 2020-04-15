@@ -1,8 +1,22 @@
 {% extends 'base.html.twig' %}
 
 {% block site_title %}
-    Index of <span class="path">{{ index.relativePath() }}</span>
+    <div class="title is-5 navbar-link is-arrowless logo">
+
+        <a class="navbar-link is-arrowless" href="{{ url.base }}">Index of</a>
+        <nav class="breadcrumb path" aria-label="path">
+            <ul>
+                {% for (path, name) in index.relativePathDirs() %}
+                    <li class="{{ loop.last ? 'is-active' }}"><a href="{{ url.base }}{{ path }}">{{ name }}</a></li>
+                {% else %}
+                    <li><a href="{{ url.base }}">/</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
 {% endblock %}
+
+{% block title %}Index of {{ index.relativePath() }}{% endblock %}
 
 {% block main %}
     <div class="container is-fluid index">
@@ -61,7 +75,7 @@
                     {% else %}
 
                         <td>
-                            {#                            <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
+                            {# <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
                             <i class="fas fa-file"></i>
                         </td>
 
@@ -89,9 +103,11 @@
 
             {% else %}
 
-                <li class="list-item">
-                    <p>nothing here</p>
-                </li>
+                <tr>
+                    <td colspan="5">
+                        <p>nothing here</p>
+                    </td>
+                </tr>
             {% endfor %}
 
             </tbody>
@@ -103,7 +119,7 @@
                 <div class="content">
                     <h1 class="title">README.md</h1>
                     <div class="box">
-                        {{ readmeFile.read() | render_markdown() }}
+                        {{ readmeFile.read() | render_markdown(url.current) }}
                     </div>
                 </div>
             {% endcache %}

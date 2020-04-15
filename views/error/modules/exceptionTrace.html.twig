@@ -1,0 +1,25 @@
+<small>
+    <strong>in:</strong> {{ error.file }}:{{ error.line }}
+</small>
+
+{% if config.debug %}
+    <div class="control has-icons-left">
+        <span class="icon is-left"><i class="fas fa-arrow-down"></i></span>
+        <ul>
+            {% for (id, trace) in error.trace %}
+                <li class="list-item is-debug-trace">
+                    <span class="tag is-warning"><strong>{{ id }}</strong></span>
+                    <code>
+                        {{ trace }}
+                    </code>
+                </li>
+            {% endfor %}
+            <li class="list-item level is-debug-trace">
+                <span class="tag is-danger"><i class="fas fa-code fa-fw"></i></span>
+                <code>
+                    {{ '%s(%d): %s' | format(error.file, error.line, error.lines[error.line]) }}
+                </code>
+            </li>
+        </ul>
+    </div>
+{% endif %}

@@ -69,8 +69,6 @@ class Router
                 $routeCollection($routes, $this->renderer);
             }
 
-            $sourceDirectoryName = basename(dirname(__DIR__, 2));
-
             // Routes: assets
             $routes->addRoute('GET', '/assets/{path:.+}/{file}.{extension:css|scss|js}', function (string $path, string $file, string $extension) {
                 $file = ltrim($file, '_');

@@ -5,10 +5,13 @@ namespace ricwein\DirectoryIndex\Core;
 
 
 use Generator;
+use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use ricwein\DirectoryIndex\Config\Config;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
+use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\Exception;
+use ricwein\FileSystem\Exceptions\FileNotFoundException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Storage;
@@ -43,6 +46,10 @@ class Indexer
         return $this->directory;
     }
 
+    /**
+     * @return bool
+     * @throws FileSystemRuntimeException
+     */
     public function isRoot(): bool
     {
         return $this->rootDir->path()->real === $this->directory->path()->real;
@@ -67,6 +74,26 @@ class Indexer
         }
 
         throw new RuntimeException('Mismatching current- and root-path. This should never happen!', 500);
+    }
+
+    /**
+     * @return array<string, string> <dirpath, dirname>
+     * @throws FileSystemRuntimeException
+     * @throws RuntimeException
+     */
+    public function relativePathDirs(): array
+    {
+        $relativePath = $this->relativePath();
+        $dirpath = '';
+        $components = explode('/', $relativePath);
+        $result = [];
+
+        foreach ($components as $dir) {
+            $dirpath = "{$dirpath}/{$dir}";
+            $result[$dirpath] = $dir;
+        }
+
+        return $result;
     }
 
     /**
@@ -109,8 +136,12 @@ class Indexer
     /**
      * @param Storage\Disk $storage
      * @return bool
+     * @throws AccessDeniedException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
+     * @throws PhpfastcacheInvalidArgumentException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
      * @internal
      */
     public function filterFileStorage(Storage\Disk $storage): bool

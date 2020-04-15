@@ -16,6 +16,8 @@ use ricwein\Templater\Exceptions\UnexpectedValueException;
  * @property-read bool development
  * @property-read bool hideDotfiles
  * @property-read bool docker
+ * @property-read ?string path
+ * @property-read array defaultIndexIgnore
  * @property-read array imports
  * @property-read array paths
  * @property-read array log
@@ -40,7 +42,10 @@ class Config
         'URLLocationPath' => '/',
         'docker' => false,
 
+        'path' => null,
+
         'hideDotfiles' => false,
+        'defaultIndexIgnore' => [],
 
         'imports' => [
             ['resource' => 'config.json'],
@@ -152,10 +157,12 @@ class Config
         foreach ($_ENV as $name => $value) {
             switch ($name) {
 
-                case 'URL_LOCATION_PATH':
+                case 'INDEX_URL_LOCATION_PATH':
                     $this->config['URLLocationPath'] = (string)$value;
                     break;
 
+                case 'INDEX_DEVELOPMENT':
+                case 'INDEX_DEBUG':
                 case 'DEVELOPMENT':
                 case 'DEBUG':
                     if (null === $boolVal = static::toBool($value)) {
@@ -164,45 +171,52 @@ class Config
                     $this->config['development'] = $boolVal;
                     break;
 
-                case 'HIDE_DOTFILES':
+                case 'INDEX_PATH':
+
+
+                case 'INDEX_HIDE_DOTFILES':
                     if (null === $boolVal = static::toBool($value)) {
                         throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
                     }
                     $this->config['hideDotfiles'] = $boolVal;
                     break;
 
-                case 'DOCKER':
+                case 'INDEX_DOCKER':
                     if (null === $boolVal = static::toBool($value)) {
                         throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
                     }
                     $this->config['docker'] = $boolVal;
                     break;
 
-                case 'IMPORTS':
+                case 'INDEX_IMPORTS':
                     $this->config['imports'] = [['resource' => (string)$value]];
                     break;
 
-                case 'CACHE_ENABLED':
+                case 'INDEX_CACHE_ENABLED':
                     if (null === $boolVal = static::toBool($value)) {
                         throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
                     }
                     $this->config['cache']['enabled'] = (bool)$boolVal;
                     break;
 
-                case 'CACHE_ENGINE':
+                case 'INDEX_CACHE_ENGINE':
                     $this->config['cache']['engine'] = (string)$value;
                     break;
 
-                case 'CACHE_TTL':
+                case 'INDEX_CACHE_TTL':
                     $this->config['cache']['ttl'] = (int)$value;
                     break;
 
-                case 'STRIP_COMMENTS':
-                case 'REMOVE_COMMENTS':
+                case 'INDEX_STRIP_COMMENTS':
+                case 'INDEX_REMOVE_COMMENTS':
                     if (null === $boolVal = static::toBool($value)) {
                         throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
                     }
                     $this->config['views']['removeComments'] = $boolVal;
+                    break;
+
+                case 'INDEX_DEFAULT_IGNORE':
+                    $this->config['defaultIndexIgnore'] = json_decode((string)$value, true, 512, JSON_THROW_ON_ERROR);
                     break;
             }
         }
