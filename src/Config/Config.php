@@ -52,9 +52,9 @@ class Config
         ],
 
         'paths' => [
-            'log' => '/logs',
-            'cache' => '/cache',
-            'view' => '/views',
+            'log' => '/var/log',
+            'cache' => '/var/cache',
+            'view' => '/templates',
             'asset' => '/assets',
             'config' => '/config',
         ],
@@ -204,7 +204,8 @@ class Config
                     break;
 
                 case 'INDEX_CACHE_TTL':
-                    $this->config['cache']['ttl'] = (int)$value;
+                    $this->config['cache']['ttl']
+                        = (int)$value;
                     break;
 
                 case 'INDEX_STRIP_COMMENTS':
