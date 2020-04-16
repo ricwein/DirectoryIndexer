@@ -3,7 +3,7 @@
  * @author Richard Weinhold
  */
 
-namespace ricwein\DirectoryIndex\Core;
+namespace ricwein\Indexer\Core;
 
 use Exception;
 use Phpfastcache\CacheManager;
@@ -22,12 +22,18 @@ use ReflectionException;
 use RuntimeException;
 
 /**
- * PSR 6 Cache Wrapper with prefix support
+ * PSR 6 Cache Wrapper
  *
  * @method bool clear()
  * @method bool save(CacheItemInterface $item)
  * @method CacheItemInterface saveDeferred(CacheItemInterface $item)
  * @method bool commit()
+ * @method bool hasItem(string $key)
+ * @method ExtendedCacheItemInterface getItem(string $key)
+ * @method array getItems(array $keys = [])
+ * @method mixed setItem(CacheItemInterface $item)
+ * @method bool deleteItem(string $key)
+ * @method bool deleteItems(array $keys)
  * @method ExtendedCacheItemInterface[] getItemsByTag(string $tagName)
  * @method ExtendedCacheItemInterface[] getItemsByTags(array $tagNames)
  * @method ExtendedCacheItemInterface[] getItemsByTagsAll(array $tagNames)
@@ -44,11 +50,6 @@ class Cache
     protected ExtendedCacheItemPoolInterface $cache;
 
     /**
-     * @var string
-     */
-    private string $prefix = '';
-
-    /**
      * @param string $engine cache-type
      * @param array $config
      * @throws PhpfastcacheDriverCheckException
@@ -60,10 +61,6 @@ class Cache
      */
     public function __construct(string $engine, array $config)
     {
-        if (isset($config['prefix']) && $config['prefix'] !== null) {
-            $this->setPrefix($config['prefix']);
-        }
-
         // load caching-adapter
         try {
             if (!$config['enabled']) {
@@ -82,16 +79,6 @@ class Cache
         } catch (Exception $e) {
             $this->cache = static::_loadCache($config['fallback'], $config);
         }
-    }
-
-    /**
-     * @param string $prefix
-     * @return self
-     */
-    public function setPrefix(string $prefix = ''): self
-    {
-        $this->prefix = trim(rtrim((string)$prefix, '._-')) . '.';
-        return $this;
     }
 
     /**
@@ -201,40 +188,15 @@ class Cache
                 }
                 return CacheManager::getInstance('memcache', new Drivers\Memcache\Config($memcacheConfig));
 
+            case 'files':
+                $filesConfig = new Drivers\Files\Config($driverConfig);
+                $filesConfig->setSecurityKey('index');
+                return CacheManager::getInstance('files', $filesConfig);
+
             default:
                 return CacheManager::getInstance(strtolower($name), new ConfigurationOption($driverConfig));
 
         }
-    }
-
-    /**
-     * @param string $key
-     * @return string
-     */
-    protected function prefixString(string $key): string
-    {
-        return $this->prefix . str_replace(
-                ['{', '}', '(', ')', '/', '\\', '@', ':'],
-                ['|', '|', '|', '|', '.', '.', '-', '_'],
-                $key
-            );
-    }
-
-    /**
-     * @param array $keys
-     * @param bool $recursive
-     * @return array
-     */
-    protected function prefixArray(array $keys, bool $recursive = false): array
-    {
-        foreach ($keys as &$key) {
-            if (is_string($key)) {
-                $key = $this->prefixString($key);
-            } elseif ($recursive && is_array($key)) {
-                $key = $this->prefixArray($key, $recursive);
-            }
-        }
-        return $keys;
     }
 
     /**
@@ -243,65 +205,6 @@ class Cache
     public function getDriver(): ExtendedCacheItemPoolInterface
     {
         return $this->cache;
-    }
-
-    /**
-     * @param string $key
-     * @return ExtendedCacheItemInterface
-     * @throws PhpfastcacheInvalidArgumentException
-     */
-    public function getItem(string $key): ExtendedCacheItemInterface
-    {
-        return $this->cache->getItem($this->prefixString($key));
-    }
-
-    /**
-     * @param string $key
-     * @return bool
-     * @throws InvalidArgumentException
-     */
-    public function hasItem(string $key): bool
-    {
-        return $this->cache->hasItem($this->prefixString($key));
-    }
-
-    /**
-     * @param string[] $keys
-     * @return CacheItemInterface[]
-     */
-    public function getItems(array $keys = []): array
-    {
-        return $this->cache->getItems($this->prefixArray($keys));
-    }
-
-    /**
-     * @param string $key
-     * @return bool
-     * @throws InvalidArgumentException
-     */
-    public function deleteItem(string $key): bool
-    {
-        return $this->cache->deleteItem($this->prefixString($key));
-    }
-
-    /**
-     * @param string[] $keys
-     * @return bool
-     * @throws InvalidArgumentException
-     */
-    public function deleteItems(array $keys): bool
-    {
-        return $this->cache->deleteItems($this->prefixArray($keys));
-    }
-
-    /**
-     * @param CacheItemInterface $item
-     * @return self
-     */
-    public function setItem(CacheItemInterface $item)
-    {
-        $this->cache->setItem($item);
-        return $this;
     }
 
     /**

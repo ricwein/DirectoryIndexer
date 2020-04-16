@@ -1,14 +1,17 @@
 <?php
 
-namespace ricwein\DirectoryIndex\Core;
+namespace ricwein\Indexer\Core;
 
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use ReflectionClass;
-use ricwein\DirectoryIndex\Config\Config;
-use ricwein\DirectoryIndex\Network\Http;
+use ricwein\Indexer\Config\Config;
+use ricwein\Indexer\Indexer\DirectoryList;
+use ricwein\Indexer\Indexer\PathIgnore;
+use ricwein\Indexer\Indexer\Search;
+use ricwein\Indexer\Network\Http;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\Exception as FileSystemException;
 use ricwein\FileSystem\File;
@@ -20,7 +23,7 @@ use ricwein\FileSystem\Exceptions\FileNotFoundException;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\Templater\Config as TemplaterConfig;
-use ricwein\DirectoryIndex\Templating\AssetParser;
+use ricwein\Indexer\Templating\AssetParser;
 use ricwein\Templater\Engine\BaseFunction;
 use ricwein\Templater\Exceptions\RenderingException;
 use ricwein\Templater\Exceptions\RuntimeException as TemplaterRuntimeException;
@@ -351,13 +354,9 @@ class Renderer
         /** @var Throwable[] $chain */
         echo "FATAL ERROR\n";
 
-        $config = null;
-        try {
-            $config = Config::getInstance();
-        } catch (FileNotFoundException|TemplateUnexpectedValueException $e) {
-        }
-
+        $config = Config::getInstance();
         $prev = $error;
+
         do {
 
             $errorType = substr(strrchr(get_class($prev), "\\"), 1);
@@ -401,8 +400,51 @@ class Renderer
     }
 
     /**
+     * @return Directory
+     * @throws AccessDeniedException
+     * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
+     */
+    private function getRootDir(): Directory
+    {
+        if (null !== $path = $this->config->path) {
+
+            if (strpos($path, '/') === 0) {
+                $storage = new Storage\Disk($path);
+            } else {
+                $storage = new Storage\Disk(__DIR__ . '/../../../' . $path);
+            }
+
+        } else {
+            $storage = new Storage\Disk(__DIR__ . '/../../../');
+        }
+
+        $rootDir = new Directory($storage, Constraint::STRICT & ~Constraint::DISALLOW_LINK);
+        if (!$rootDir->isDir() || !$rootDir->isReadable()) {
+            throw new RuntimeException("Unable to read root directory: {$rootDir->path()->raw}", 500);
+        }
+
+        return $rootDir;
+    }
+
+    /**
+     * @param string $searchTerm
+     * @throws AccessDeniedException
+     * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function displayPathSearch(string $searchTerm): void
+    {
+        $this->display('page/search.html.twig', 200, [
+            'subject' => $searchTerm,
+            'searcher' => new Search($this->getRootDir(), $this->config, $this->cache),
+        ]);
+    }
+
+    /**
      * @param string $path
      * @throws AccessDeniedException
+     * @throws ConstraintsException
      * @throws FileNotFoundException
      * @throws FileSystemException
      * @throws FileSystemRuntimeException
@@ -410,11 +452,7 @@ class Renderer
      */
     public function displayPath(string $path): void
     {
-        $rootDir = new Directory(new Storage\Disk(__DIR__ . '/../../../'), Constraint::STRICT);
-
-        if (!$rootDir->isDir() || !$rootDir->isReadable()) {
-            throw new RuntimeException("Unable to read root directory: {$rootDir->path()->raw}", 500);
-        }
+        $rootDir = $this->getRootDir();
 
         $path = ltrim($path, '/');
         if (empty($path)) {
@@ -422,7 +460,7 @@ class Renderer
         }
 
         $storage = new Storage\Disk($rootDir, $path);
-        $pathIgnore = new PathIgnore($rootDir, $this->config, $this->cache);
+        $pathIgnore = new PathIgnore($rootDir, $this->config);
 
         if (!$storage->isReadable() || $pathIgnore->isForbidden($storage)) {
             throw new FileNotFoundException("Unable to open or read file: {$path}", 404);
@@ -442,12 +480,12 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        $this->displayPathIndex($rootDir, new Directory($storage));
+        $this->displayPathIndex($rootDir, new Directory($storage, Constraint::STRICT & ~Constraint::DISALLOW_LINK));
     }
 
     private function displayPathIndex(Directory $rootDir, Directory $dir): void
     {
-        $indexer = new Indexer($rootDir, $dir, $this->config, $this->cache,);
+        $indexer = new DirectoryList($rootDir, $dir, $this->config, $this->cache,);
         $this->display('page/index.html.twig', 200, ['index' => $indexer]);
     }
 
@@ -539,7 +577,9 @@ class Renderer
     }
 
     /**
-     * @inheritDoc
+     * @param string $filename
+     * @param string[] $flags
+     * @return string
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
@@ -597,8 +637,10 @@ class Renderer
     }
 
     /**
-     * @inheritDoc
+     * @param File $assetFile
+     * @param string $baseURL
      * @param string[] $flags
+     * @return string
      * @throws FileSystemRuntimeException
      */
     private function renderStyleAsset(File $assetFile, string $baseURL, array $flags): string
@@ -646,7 +688,9 @@ class Renderer
     }
 
     /**
-     * @inheritDoc
+     * @param File $assetFile
+     * @param string $baseURL
+     * @return string
      * @throws FileSystemRuntimeException
      */
     private function renderScriptAsset(File $assetFile, string $baseURL): string

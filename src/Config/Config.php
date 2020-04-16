@@ -3,10 +3,11 @@
  *  SLURM Configurator - central Runtime-Configuration
  */
 
-namespace ricwein\DirectoryIndex\Config;
+namespace ricwein\Indexer\Config;
 
+use JsonException;
 use Monolog\Logger;
-use ricwein\DirectoryIndex\Core\Helper;
+use ricwein\Indexer\Core\Helper;
 use ricwein\FileSystem\Exceptions\FileNotFoundException;
 use ricwein\Templater\Exceptions\UnexpectedValueException;
 
@@ -14,9 +15,8 @@ use ricwein\Templater\Exceptions\UnexpectedValueException;
  * Class Config
  * @property-read string URLLocationPath
  * @property-read bool development
- * @property-read bool hideDotfiles
  * @property-read bool docker
- * @property-read ?string path
+ * @property-read string|null path
  * @property-read array defaultIndexIgnore
  * @property-read array imports
  * @property-read array paths
@@ -44,7 +44,6 @@ class Config
 
         'path' => null,
 
-        'hideDotfiles' => false,
         'defaultIndexIgnore' => [],
 
         'imports' => [
@@ -98,8 +97,6 @@ class Config
      * provide singleton access to configurations
      * @param array|null $override
      * @return self
-     * @throws FileNotFoundException
-     * @throws UnexpectedValueException
      */
     public static function getInstance(?array $override = null): self
     {
@@ -115,6 +112,7 @@ class Config
     /**
      * init new config object
      * @throws FileNotFoundException
+     * @throws JsonException
      * @throws UnexpectedValueException
      */
     private function __construct()
@@ -151,6 +149,7 @@ class Config
 
     /**
      * @throws UnexpectedValueException
+     * @throws JsonException
      */
     private function loadConfigEnv(): void
     {
@@ -172,13 +171,7 @@ class Config
                     break;
 
                 case 'INDEX_PATH':
-
-
-                case 'INDEX_HIDE_DOTFILES':
-                    if (null === $boolVal = static::toBool($value)) {
-                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
-                    }
-                    $this->config['hideDotfiles'] = $boolVal;
+                    $this->config['path'] = (string)$value;
                     break;
 
                 case 'INDEX_DOCKER':
@@ -229,6 +222,7 @@ class Config
      * @param array $loaded
      * @return self
      * @throws FileNotFoundException
+     * @throws JsonException
      */
     private function loadConfigFiles(array $importList, array $loaded = []): self
     {

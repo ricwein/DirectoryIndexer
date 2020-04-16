@@ -4,13 +4,19 @@
   box-shadow: 0 4px 6px 0 rgba(12, 0, 46, 0.06);
 }
 
-.navbar .navbar-link.logo {
-  border-radius: 0.5rem;
-  color: black;
-  font-weight: bold;
+.navbar {
+  .navbar-item.field {
+    margin-bottom: 0;
+  }
 
-  .path.breadcrumb li a {
-    padding: 0;
+  .navbar-link.logo {
+    border-radius: 0.5rem;
+    color: black;
+    font-weight: bold;
+
+    .path.breadcrumb li a {
+      padding: 0;
+    }
   }
 }
 

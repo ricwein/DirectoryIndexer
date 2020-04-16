@@ -1,14 +1,12 @@
 <?php
 
+namespace ricwein\Indexer\Indexer;
 
-namespace ricwein\directoryindex\Core;
-
-use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
-use ricwein\DirectoryIndex\Config\Config;
-use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
-use ricwein\FileSystem\Exceptions\FileNotFoundException;
+use ricwein\FileSystem\Exceptions\Exception;
+use ricwein\Indexer\Config\Config;
+use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\RuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException as FileSystemUnexpectedValueException;
 use ricwein\FileSystem\File;
@@ -38,7 +36,6 @@ class PathIgnore
         'values' => [self::ATTRIBUTE_ACCESS_DENY => -1, self::ATTRIBUTE_ACCESS_ALLOW => +1]
     ];
 
-    private ?Cache $cache;
     private Directory $rootDir;
     private Config $config;
 
@@ -46,61 +43,23 @@ class PathIgnore
      * PathIgnore constructor.
      * @param Directory $rootDir
      * @param Config $config
-     * @param Cache|null $cache
      */
-    public function __construct(Directory $rootDir, Config $config, ?Cache $cache)
+    public function __construct(Directory $rootDir, Config $config)
     {
         $this->rootDir = $rootDir;
         $this->config = $config;
-        $this->cache = $cache;
     }
 
     /**
-     * @param Storage\Disk $storage Directory
-     * @return array<string, string>
+     * @param Storage\Disk $storage
+     * @return array
      * @throws AccessDeniedException
      * @throws ConstraintsException
-     * @throws FileNotFoundException
-     * @throws PhpfastcacheInvalidArgumentException
+     * @throws Exception
+     * @throws FileSystemUnexpectedValueException
      * @throws RuntimeException
      */
-    private function fetchRules(Storage\Disk $storage): array
-    {
-        if ($this->cache === null) {
-            return $this->parseIndexIgnoreFiles($storage);
-        }
-
-        $cacheKey = str_replace(
-            ['{', '}', '(', ')', '/', '\\', '@', ':'],
-            ['|', '|', '|', '|', '.', '.', '-', '_'],
-            sprintf('indexignore_rules_%s|%d|%d',
-                $storage->path()->real,
-                $this->rootDir->getTime(),
-                $this->config->development ? 1 : 0,
-            )
-        );
-
-        $ruleCacheItem = $this->cache->getItem($cacheKey);
-
-        if ($ruleCacheItem->isHit()) {
-            return $ruleCacheItem->get();
-        }
-
-        $rules = $this->parseIndexIgnoreFiles($storage);
-
-        $ruleCacheItem->set($rules);
-        $ruleCacheItem->expiresAfter($this->config->cache['ttl']);
-        $this->cache->save($ruleCacheItem);
-
-        return $rules;
-    }
-
-    /**
-     * @param Storage\Disk $storage Directory
-     * @return array
-     * @throws RuntimeException
-     */
-    private function parseIndexIgnoreFiles(Storage\Disk $storage): array
+    private function getIndexIgnoreFiles(Storage\Disk $storage): array
     {
         // fetch all directories between root and current
         $intermediateDirs = explode('/', str_replace(
@@ -109,13 +68,30 @@ class PathIgnore
             $storage->path()->real
         ));
 
-        $ignoreFiles = array_map(function (string $dir): File {
-            return (new Directory(new Storage\Disk($this->rootDir->path()->real, $dir)))->file(static::FILEIGNORE_FILENAME);
-        }, $intermediateDirs);
+        $dir = '';
+        $ignoreFiles = [];
+        foreach ($intermediateDirs as $intermediateDir) {
+            $dir .= "/{$intermediateDir}";
+            $ignoreFiles[] = (new Directory(new Storage\Disk($this->rootDir->path()->real, $dir)))->file(static::FILEIGNORE_FILENAME, $this->rootDir->storage()->getConstraints());
+        }
 
-        $ignoreFiles = array_filter($ignoreFiles, static function (File $file): bool {
+        return array_filter($ignoreFiles, static function (File $file): bool {
             return $file->isFile() && $file->isReadable();
         });
+    }
+
+    /**
+     * @param Storage\Disk $storage Directory
+     * @return array<string, string>
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws FileSystemUnexpectedValueException
+     * @throws RuntimeException
+     */
+    private function fetchRules(Storage\Disk $storage): array
+    {
+        $ignoreFiles = $this->getIndexIgnoreFiles($storage);
 
         $rulesets = [];
         if (null !== $defaultIgnore = $this->config->defaultIndexIgnore) {
@@ -138,8 +114,8 @@ class PathIgnore
             // parse rules
             foreach ($ruleset['rules'] as $pattern => $type) {
 
+                // validate rule-type
                 $type = strtolower(trim($type));
-
                 if (!in_array($type, static::ATTRIBUTE_VALUES, true)) {
                     throw new UnexpectedValueException(sprintf(
                         "Invalid attribute '%s' for path '%s'. Unable to parse %s.",
@@ -149,13 +125,20 @@ class PathIgnore
                     ), 500);
                 }
 
+                // prepare rule pattern (regex)
                 $pattern = trim($pattern);
-                $path = $ruleset['file'] !== null ? $ruleset['file']->path()->directory : null;
+                $patternSourcePath = preg_quote($ruleset['file'] !== null ? $ruleset['file']->path()->directory : null, '/');
 
-                if (strpos($pattern, '/') === 0) {
-                    $rules["{$path}{$pattern}"] = $type;
+                // build regex with .indexignore source path as root
+                if (in_array($pattern, ['/', '\\/'], true)) {
+                    $rules["{$patternSourcePath}\\/.*"] = $type;
+                } elseif (strpos($pattern, '\\/') === 0) {
+                    $rules["{$patternSourcePath}{$pattern}(.*)"] = $type;
                 } else {
-                    $rules["{$path}*/{$pattern}"] = $type;
+                    // file
+                    $rules["{$patternSourcePath}\\/(.+\\/)?{$pattern}"] = $type;
+                    // or directory
+                    $rules["{$patternSourcePath}\\/(.+\\/)?{$pattern}\\/.*"] = $type;
                 }
 
             }
@@ -169,10 +152,9 @@ class PathIgnore
      * @return bool
      * @throws AccessDeniedException
      * @throws ConstraintsException
-     * @throws FileNotFoundException
-     * @throws PhpfastcacheInvalidArgumentException
-     * @throws RuntimeException
+     * @throws Exception
      * @throws FileSystemUnexpectedValueException
+     * @throws RuntimeException
      */
     public function isHidden(Storage\Disk $storage): bool
     {
@@ -185,9 +167,8 @@ class PathIgnore
      * @return bool
      * @throws AccessDeniedException
      * @throws ConstraintsException
-     * @throws FileNotFoundException
+     * @throws Exception
      * @throws FileSystemUnexpectedValueException
-     * @throws PhpfastcacheInvalidArgumentException
      * @throws RuntimeException
      */
     public function isForbidden(Storage\Disk $storage): bool
@@ -201,10 +182,9 @@ class PathIgnore
      * @return array
      * @throws AccessDeniedException
      * @throws ConstraintsException
-     * @throws FileNotFoundException
-     * @throws PhpfastcacheInvalidArgumentException
-     * @throws RuntimeException
+     * @throws Exception
      * @throws FileSystemUnexpectedValueException
+     * @throws RuntimeException
      */
     private function getMatchingAttributes(Storage\Disk $storage): array
     {
@@ -224,11 +204,11 @@ class PathIgnore
 
             ++$counter;
 
-            if (!fnmatch($pattern, $path)) {
+            if (@preg_match("/^{$pattern}$/", $path, $matches) !== 1) {
                 continue;
             }
 
-            $priority = $counter;
+            $priority = $counter + count($matches);
 
             switch (true) {
                 case array_key_exists($type, static::ATTRIBUTE_ACCESS['values']):

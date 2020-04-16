@@ -1,10 +1,10 @@
 <?php
 
-namespace ricwein\DirectoryIndex\Templating;
+namespace ricwein\Indexer\Templating;
 
 use Phpfastcache\Core\Pool\ExtendedCacheItemPoolInterface;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
-use ricwein\DirectoryIndex\Config\Config;
+use ricwein\Indexer\Config\Config;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;

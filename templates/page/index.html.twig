@@ -18,6 +18,19 @@
 
 {% block title %}Index of {{ index.relativePath() }}{% endblock %}
 
+{% block navbar_items %}
+    <div class="navbar-item field">
+        <div class="buttons">
+            <a class="button is-link is-light" href="{{ url.base }}/download/{{ index.relativePath() | ltrim('/') }}">
+                <i class="fas fa-file-archive"></i>
+                &nbsp;
+                <i class="fas fa-arrow-down"></i>
+            </a>
+        </div>
+    </div>
+    {{ parent() }}
+{% endblock %}
+
 {% block main %}
     <div class="container is-fluid index">
         <table class="table is-hoverable is-fullwidth">
@@ -64,7 +77,7 @@
                         </td>
 
                         <td>
-                            {{ file.getTime | date('d.m.Y H:i:s') }}
+                            {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
                         <td>

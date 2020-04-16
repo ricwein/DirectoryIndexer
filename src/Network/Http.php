@@ -1,6 +1,6 @@
 <?php
 
-namespace ricwein\DirectoryIndex\Network;
+namespace ricwein\Indexer\Network;
 
 /**
  * class-namespace for direct http manipulation methods
@@ -126,6 +126,33 @@ class Http
         }
 
         return $default;
+    }
+
+    protected function getQueryParameters(): ?array
+    {
+        if (null === $query = $this->get('QUERY_STRING', static::SERVER, null)) {
+            return null;
+        }
+
+        parse_str($query, $queries);
+        return $queries;
+    }
+
+    /**
+     * @param string $name
+     * @return string|null
+     */
+    protected function getQueryParameter(string $name): ?string
+    {
+        if (null === $parameters = $this->getQueryParameters()) {
+            return null;
+        }
+
+        if (!isset($parameters[$name])) {
+            return null;
+        }
+
+        return $parameters[$name];
     }
 
     /**

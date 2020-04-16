@@ -3,7 +3,7 @@
  * @author Richard Weinhold
  */
 
-namespace ricwein\DirectoryIndex\Core;
+namespace ricwein\Indexer\Core;
 
 /**
  * provides static helper methods

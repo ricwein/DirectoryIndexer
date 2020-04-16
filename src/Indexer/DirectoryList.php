@@ -1,26 +1,22 @@
 <?php
 
-
-namespace ricwein\DirectoryIndex\Core;
-
+namespace ricwein\Indexer\Indexer;
 
 use Generator;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
-use ricwein\DirectoryIndex\Config\Config;
+use ricwein\Indexer\Config\Config;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
-use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\Exception;
-use ricwein\FileSystem\Exceptions\FileNotFoundException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Storage;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
+use ricwein\Indexer\Core\Cache;
 use ricwein\Templater\Exceptions\RuntimeException;
 
-class Indexer
+class DirectoryList
 {
-    private Config $config;
     private Directory $directory;
     private Directory $rootDir;
     private PathIgnore $pathIgnore;
@@ -36,9 +32,8 @@ class Indexer
     {
         $this->rootDir = $rootDir;
         $this->directory = $dir;
-        $this->config = $config;
 
-        $this->pathIgnore = new PathIgnore($this->rootDir, $this->config, $cache);
+        $this->pathIgnore = new PathIgnore($this->rootDir, $config);
     }
 
     public function dir(): Directory
@@ -136,20 +131,13 @@ class Indexer
     /**
      * @param Storage\Disk $storage
      * @return bool
-     * @throws AccessDeniedException
      * @throws FileSystemRuntimeException
-     * @throws UnexpectedValueException
      * @throws PhpfastcacheInvalidArgumentException
-     * @throws ConstraintsException
-     * @throws FileNotFoundException
+     * @throws UnexpectedValueException
      * @internal
      */
     public function filterFileStorage(Storage\Disk $storage): bool
     {
-        if ($this->config->hideDotfiles && $storage->isDotfile()) {
-            return false;
-        }
-
         if (!$storage->isReadable()) {
             return false;
         }

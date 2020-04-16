@@ -3,7 +3,7 @@
  * @author Richard Weinhold
  */
 
-namespace ricwein\DirectoryIndex\Network;
+namespace ricwein\Indexer\Network;
 
 use RuntimeException;
 

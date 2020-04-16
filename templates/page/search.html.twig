@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block site_title %}
+    <div class="title is-5 navbar-link is-arrowless logo">
+        <a class="navbar-link is-arrowless" href="{{ url.base }}">Search Results for: &nbsp; <strong><small>{{ subject }}</small></strong></a>
+    </div>
+{% endblock %}
+
+{% block title %}Search: {{ subject }}{% endblock %}
+{% block search_subject %}{{ subject }}{% endblock %}
+
+{% block main %}
+    <div class="container is-fluid index">
+        <table class="table is-hoverable is-fullwidth">
+            <thead>
+            <tr>
+                <th colspan="2">name</th>
+                <th>type</th>
+                <th>last modified</th>
+                <th>size</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            {% for file in searcher.search(subject) %}
+                <tr>
+                    {% if file.isDir() %}
+
+                        <td>
+                            <i class="fas fa-folder"></i>
+                        </td>
+
+                        <td>
+                            <a href="{{ url.base }}/{{ file.path().filepath | url_encode }}">
+                                {{ (file.path().filepath | ltrim('/')) ~ '/' }}
+                            </a>
+                        </td>
+
+                        <td>
+                            folder
+                        </td>
+
+                        <td>
+                            {{ file.getTime() | date('d.m.Y H:i:s') }}
+                        </td>
+
+                        <td>
+                            -
+                        </td>
+
+
+                    {% else %}
+
+                        <td>
+                            {# <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
+                            <i class="fas fa-file"></i>
+                        </td>
+
+                        <td>
+                            <a href="{{ url.base }}/{{ file.path().filepath | url_encode }}">
+                                <span class="filename">{{ file.path().filepath | ltrim('/') }}</span>
+                            </a>
+                        </td>
+
+                        <td>
+                            file
+                        </td>
+
+                        <td>
+                            {{ file.getTime | date('d.m.Y H:i:s') }}
+                        </td>
+
+                        <td>
+                            {{ file.getSize() | format_bytes(0) }}
+                        </td>
+
+
+                    {% endif %}
+                </tr>
+
+            {% else %}
+
+                <tr>
+                    <td colspan="5">
+                        <p>No results found</p>
+                    </td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+
+{% endblock %}

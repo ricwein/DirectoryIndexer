@@ -1,6 +1,6 @@
 <?php
 
-namespace ricwein\DirectoryIndex\Core;
+namespace ricwein\Indexer\Core;
 
 use Exception;
 use FastRoute;
@@ -10,13 +10,10 @@ use Phpfastcache\Exceptions\PhpfastcacheDriverNotFoundException;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidConfigurationException;
 use ReflectionException;
-use ricwein\DirectoryIndex\Config\Config;
-use ricwein\DirectoryIndex\Exception\NotFoundException;
-use ricwein\DirectoryIndex\Exception\RoutingException;
-use ricwein\DirectoryIndex\Network\Http;
-use ricwein\FileSystem\Exceptions\AccessDeniedException;
-use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
-use ricwein\FileSystem\Exceptions\UnexpectedValueException;
+use ricwein\Indexer\Config\Config;
+use ricwein\Indexer\Exception\NotFoundException;
+use ricwein\Indexer\Exception\RoutingException;
+use ricwein\Indexer\Network\Http;
 use RuntimeException;
 use Throwable;
 
@@ -86,6 +83,12 @@ class Router
                 $this->renderer->displayAssetFile("{$filepath}.{$extension}");
             });
 
+            if (null !== $subject = $this->http->getQueryParameter('subject')) {
+                $routes->addRoute('GET', '/search/', function () use ($subject) {
+                    $this->renderer->displayPathSearch($subject);
+                });
+            }
+
             // Routes: landing page
             $routes->addRoute('GET', '/{path:.*}', function (string $path) {
                 $this->renderer->displayPath($path);
@@ -93,7 +96,7 @@ class Router
         };
     }
 
-    public function dispatch()
+    public function dispatch(): void
     {
         if ($this->dispatcher === null || $this->renderer === null) {
             throw new RuntimeException('The Router must be setup before it can dispatch requests, but it isn\'t', 500);
@@ -136,9 +139,6 @@ class Router
 
     /**
      * @param Throwable $throwable
-     * @throws AccessDeniedException
-     * @throws FileSystemRuntimeException
-     * @throws UnexpectedValueException
      */
     public function handleException(Throwable $throwable): void
     {

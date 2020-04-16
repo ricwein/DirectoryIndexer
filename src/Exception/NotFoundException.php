@@ -1,6 +1,6 @@
 <?php
 
-namespace ricwein\DirectoryIndex\Exception;
+namespace ricwein\Indexer\Exception;
 
 use Throwable;
 use UnexpectedValueException;
