@@ -9,75 +9,87 @@
 {% block title %}Search: {{ subject }}{% endblock %}
 {% block search_subject %}{{ subject }}{% endblock %}
 
+{% block search_input %}
+    <div class="control has-icons-left">
+        <span class="icon is-left"><i class="fas fa-search"></i></span>
+        <label>
+            <input class="input" type="search" name="subject" placeholder="Search..." autofocus onfocus="this.setSelectionRange(this.value.length,this.value.length);" value="{% block search_subject %}{% endblock %}">
+        </label>
+    </div>
+    <div class="control">
+        <button type="submit" class="button is-black" id="search_button" style="width: 100px" onclick="updateSearchButton();">Search</button>
+    </div>
+{% endblock %}
+
 {% block main %}
     <div class="container is-fluid index">
-        <table class="table is-hoverable is-fullwidth">
+        <table class="table is-hoverable is-fullwidth" id="index">
             <thead>
             <tr>
-                <th colspan="2">name</th>
-                <th>type</th>
-                <th>last modified</th>
-                <th>size</th>
+                <th colspan="2" data-sort-column-key="name">Name</th>
+                <th data-sort-column-key="type">Type</th>
+                <th data-sort-column-key="modified" data-sort-method='number'>Last Modified</th>
+                <th data-sort-column-key="size" data-sort-method='number'>Size</th>
             </tr>
             </thead>
 
             <tbody>
 
             {% for file in searcher.search(subject) %}
-                <tr>
-                    {% if file.isDir() %}
+                {% if file.isDir() %}
 
+                    <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
                             <i class="fas fa-folder"></i>
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}/'>
                             <a href="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                                 {{ (file.path().filepath | ltrim('/')) ~ '/' }}
                             </a>
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="type">
                             folder
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
                             {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="size" data-sort='999999999999999999999'>
                             -
                         </td>
+                    </tr>
 
+                {% else %}
 
-                    {% else %}
-
+                    <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
                             {# <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
                             <i class="fas fa-file"></i>
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}'>
                             <a href="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                                 <span class="filename">{{ file.path().filepath | ltrim('/') }}</span>
                             </a>
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="type">
                             file
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
                             {{ file.getTime | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td>
+                        <td data-sort-column-key="size" data-sort='{{ file.getSize() }}'>
                             {{ file.getSize() | format_bytes(0) }}
                         </td>
+                    </tr>
 
-
-                    {% endif %}
-                </tr>
+                {% endif %}
 
             {% else %}
 
@@ -93,4 +105,14 @@
 
     </div>
 
+{% endblock %}
+
+{% block footer %}
+    {{ parent }}
+
+    {{ asset('/libs/tablesort/dist/tablesort.min.js', 'inline') }}
+    {{ asset('/libs/tablesort/dist/sorts/tablesort.number.min.js', 'inline') }}
+    <script type="text/javascript">new Tablesort(document.getElementById('index'));</script>
+
+    {{ asset('/js/clickableRows.js', 'inline') }}
 {% endblock %}

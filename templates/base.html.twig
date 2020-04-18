@@ -69,17 +69,17 @@
 
                                 {% block navbar_items %}
                                     <form class="navbar-item field has-addons" method="get" action="{{ url.base }}/search/">
-                                        <div class="control has-icons-left">
-                                            <span class="icon is-left">
-                                                <i class="fas fa-search"></i>
-                                            </span>
-                                            <label>
-                                                <input class="input" type="search" name="subject" placeholder="Search..." value="{% block search_subject %}{% endblock %}">
-                                            </label>
-                                        </div>
-                                        <div class="control">
-                                            <button type="submit" class="button is-black" id="search_button" style="width: 100px" onclick="updateSearchButton();">Search</button>
-                                        </div>
+                                        {% block search_input %}
+                                            <div class="control has-icons-left">
+                                                <span class="icon is-left"><i class="fas fa-search"></i></span>
+                                                <label>
+                                                    <input class="input" type="search" name="subject" placeholder="Search..." value="{% block search_subject %}{% endblock %}">
+                                                </label>
+                                            </div>
+                                            <div class="control">
+                                                <button type="submit" class="button is-black" id="search_button" style="width: 100px" onclick="updateSearchButton();">Search</button>
+                                            </div>
+                                        {% endblock %}
                                     </form>
                                 {% endblock %}
 

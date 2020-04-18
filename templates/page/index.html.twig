@@ -61,17 +61,17 @@
         <table class="table is-hoverable is-fullwidth" id="index">
             <thead>
             <tr>
-                <th colspan="2">name</th>
-                <th>type</th>
-                <th>last modified</th>
-                <th>size</th>
+                <th colspan="2" data-sort-column-key="name">Name</th>
+                <th data-sort-column-key="type">Type</th>
+                <th data-sort-column-key="modified" data-sort-method='number'>Last Modified</th>
+                <th data-sort-column-key="size" data-sort-method='number'>Size</th>
             </tr>
             </thead>
 
             <tbody>
 
             {% if not(index.isRoot()) %}
-                <tr>
+                <tr data-sort-method='none' class="clickableRow" data-uri="{{ url.base }}{{ index.relativePathUp() | url_encode }}">
                     <td>
                         <i class="fas fa-arrow-up"></i>
                     </td>
@@ -84,59 +84,60 @@
             {% endif %}
 
             {% for file in index.list() %}
-                <tr>
-                    {% if file.isDir() %}
+                {% if file.isDir() %}
 
-                        <td data-sort='{{ file.path().basename }}/'>
+                    <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().basename | url_encode }}">
+                        <td>
                             <i class="fas fa-folder"></i>
                         </td>
 
-                        <td data-sort='{{ file.path().basename }}/'>
+                        <td data-sort-column-key="name" data-sort='{{ file.path().basename }}/'>
                             <a href="{{ url.current }}/{{ file.path().basename | url_encode }}">
                                 {{ file.path().basename ~ '/' }}
                             </a>
                         </td>
 
-                        <td data-sort='1'>
+                        <td data-sort-column-key="type">
                             folder
                         </td>
 
-                        <td data-sort='{{ file.getTime() }}'>
+                        <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
                             {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td data-sort='999999999999999999999'>
+                        <td data-sort-column-key="size" data-sort='999999999999999999999'>
                             -
                         </td>
+                    </tr>
 
+                {% else %}
 
-                    {% else %}
-
-                        <td data-sort='{{ file.path().filename }}'>
+                    <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                        <td>
                             {# <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
                             <i class="fas fa-file"></i>
                         </td>
 
-                        <td data-sort='{{ file.path().filename }}'>
+                        <td data-sort-column-key="name" data-sort='{{ file.path().filename }}'>
                             <a href="{{ url.current }}/{{ file.path().filename | url_encode }}">
                                 <span class="filename">{{ file.path().filename }}</span>
                             </a>
                         </td>
 
-                        <td data-sort='2'>
+                        <td data-sort-column-key="type">
                             file
                         </td>
 
-                        <td data-sort='{{ file.getTime() }}'>
-                            {{ file.getTime | date('d.m.Y H:i:s') }}
+                        <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
+                            {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td data-sort='{{ file.getSize() }}'>
+                        <td data-sort-column-key="size" data-sort='{{ file.getSize() }}'>
                             {{ file.getSize() | format_bytes(0) }}
                         </td>
+                    </tr>
 
-                    {% endif %}
-                </tr>
+                {% endif %}
 
             {% else %}
 
@@ -176,8 +177,9 @@
 {% block footer %}
     {{ parent }}
 
-    {{ asset('/libs/tablesort/dist/tablesort.min.js') }}
-    {{ asset('/libs/tablesort/dist/sorts/tablesort.number.min.js') }}
-
+    {{ asset('/libs/tablesort/dist/tablesort.min.js', 'inline') }}
+    {{ asset('/libs/tablesort/dist/sorts/tablesort.number.min.js', 'inline') }}
     <script type="text/javascript">new Tablesort(document.getElementById('index'));</script>
+
+    {{ asset('/js/clickableRows.js', 'inline') }}
 {% endblock %}

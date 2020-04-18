@@ -28,7 +28,7 @@ use ricwein\Indexer\Config\Config;
 
 class Warmup extends Command
 {
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setDescription('Directory Index Cache WarmUp.')
@@ -85,22 +85,28 @@ class Warmup extends Command
 
         $output->writeln($formatter->formatSection('WarmUp', 'indexing...'));
 
+        $timeStart = time();
         $progress = new ProgressIndicator($output);
         $progress->start('indexing: /');
         $index = new Index($rootDir, $config, $cache);
 
 
-        $index->list(static function (?SplFileInfo $file = null) use ($progress, $rootDir) {
+        $files = $index->list(static function (?SplFileInfo $file = null) use ($progress, $rootDir) {
             if ($file !== null && $file->isDir()) {
                 $path = ltrim(str_replace($rootDir->path()->real, '', $file->getRealPath()), '/');
                 $progress->setMessage("indexing: {$path}");
             }
             $progress->advance();
         });
+        $timeEnd = time();
 
-        $progress->finish('');
+        $progress->finish('<info>done</info>');
 
-        $output->writeln($formatter->formatSection('WarmUp', 'indexing... <info>done</info>'));
+        $output->writeln($formatter->formatSection('WarmUp', sprintf(
+            'Finished indexing %s files in %ds.',
+            number_format(count($files), 0, ',', '.'),
+            $timeEnd - $timeStart
+        )));
 
         return 0;
     }
