@@ -19,6 +19,7 @@ use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Core\Cache;
 use ricwein\Indexer\Indexer\Index;
 use RuntimeException;
+use SplFileInfo;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Input\InputInterface;
@@ -89,12 +90,10 @@ class Warmup extends Command
         $index = new Index($rootDir, $config, $cache);
 
 
-        $index->list(static function (?Storage\Disk $storage = null) use ($progress) {
-            if ($storage !== null) {
-                if ($storage->isDir()) {
-                    $path = ltrim($storage->path()->filepath, '/');
-                    $progress->setMessage("indexing: {$path}");
-                }
+        $index->list(static function (?SplFileInfo $file = null) use ($progress, $rootDir) {
+            if ($file !== null && $file->isDir()) {
+                $path = ltrim(str_replace($rootDir->path()->real, '', $file->getRealPath()), '/');
+                $progress->setMessage("indexing: {$path}");
             }
             $progress->advance();
         });

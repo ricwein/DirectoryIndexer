@@ -104,28 +104,29 @@ class Index
     {
         $iterator = $this->rootDir
             ->list(true)
-            ->filterStorage(function (Storage\Disk $storage) use ($progressCallback): bool {
+            ->filterPath(function (\SplFileInfo $file) use ($progressCallback): bool {
                 if ($progressCallback !== null) {
                     $progressCallback(null);
                 }
 
-                if (!$storage->isReadable()) {
+                if (!$file->isReadable()) {
                     return false;
                 }
 
-                if ($this->pathIgnore->isForbidden($storage)) {
+                if ($this->pathIgnore->isForbidden($file->getRealPath())) {
                     return false;
                 }
 
-                if ($storage->path()->filename === PathIgnore::FILEIGNORE_FILENAME) {
+                if ($file->getFilename() === PathIgnore::FILEIGNORE_FILENAME) {
                     return false;
                 }
 
                 if ($progressCallback !== null) {
-                    $progressCallback($storage);
+                    $progressCallback($file);
                 }
 
                 return true;
+
             });
 
         $fileList = [];

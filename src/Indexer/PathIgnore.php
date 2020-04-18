@@ -51,7 +51,7 @@ class PathIgnore
     }
 
     /**
-     * @param Storage\Disk $storage
+     * @param string $path
      * @return array
      * @throws AccessDeniedException
      * @throws ConstraintsException
@@ -59,13 +59,13 @@ class PathIgnore
      * @throws FileSystemUnexpectedValueException
      * @throws RuntimeException
      */
-    private function getIndexIgnoreFiles(Storage\Disk $storage): array
+    private function getIndexIgnoreFiles(string $path): array
     {
         // fetch all directories between root and current
         $intermediateDirs = explode('/', str_replace(
             $this->rootDir->path()->real,
             '',
-            $storage->path()->real
+            '/' . trim($path, '/')
         ));
 
         $dir = '';
@@ -81,17 +81,17 @@ class PathIgnore
     }
 
     /**
-     * @param Storage\Disk $storage Directory
-     * @return array<string, string>
+     * @param string $path
+     * @return array<string, array<int, int|string>>
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws Exception
      * @throws FileSystemUnexpectedValueException
      * @throws RuntimeException
      */
-    private function fetchRules(Storage\Disk $storage): array
+    private function fetchRules(string $path): array
     {
-        $ignoreFiles = $this->getIndexIgnoreFiles($storage);
+        $ignoreFiles = $this->getIndexIgnoreFiles($path);
 
         $rulesets = [];
         if (null !== $defaultIgnore = $this->config->defaultIndexIgnore) {
@@ -116,6 +116,14 @@ class PathIgnore
 
                 // validate rule-type
                 $type = strtolower(trim($type));
+                $priority = 1;
+
+                $parts = explode(':', $type, 2);
+                if (count($parts) > 1) {
+                    $type = $parts[0];
+                    $priority = (int)$parts[1];
+                }
+
                 if (!in_array($type, static::ATTRIBUTE_VALUES, true)) {
                     throw new UnexpectedValueException(sprintf(
                         "Invalid attribute '%s' for path '%s'. Unable to parse %s.",
@@ -131,14 +139,14 @@ class PathIgnore
 
                 // build regex with .indexignore source path as root
                 if (in_array($pattern, ['/', '\\/'], true)) {
-                    $rules["{$patternSourcePath}\\/.*"] = $type;
+                    $rules["{$patternSourcePath}\\/.*"] = [$type, $priority];
                 } elseif (strpos($pattern, '\\/') === 0) {
-                    $rules["{$patternSourcePath}{$pattern}(.*)"] = $type;
+                    $rules["{$patternSourcePath}{$pattern}(.*)"] = [$type, $priority];
                 } else {
                     // file
-                    $rules["{$patternSourcePath}\\/(.+\\/)?{$pattern}"] = $type;
+                    $rules["{$patternSourcePath}\\/(.+\\/)?{$pattern}"] = [$type, $priority];
                     // or directory
-                    $rules["{$patternSourcePath}\\/(.+\\/)?{$pattern}\\/.*"] = $type;
+                    $rules["{$patternSourcePath}\\/(.+\\/)?{$pattern}\\/.*"] = [$type, $priority];
                 }
 
             }
@@ -156,9 +164,28 @@ class PathIgnore
      * @throws FileSystemUnexpectedValueException
      * @throws RuntimeException
      */
-    public function isHidden(Storage\Disk $storage): bool
+    public function isHiddenStorage(Storage\Disk $storage): bool
     {
-        $rules = $this->getMatchingAttributes($storage);
+        $path = $storage->path()->real;
+        if ($storage->isDir()) {
+            $path = "{$path}/";
+        }
+
+        return $this->isHidden($path);
+    }
+
+    /**
+     * @param string $path
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws FileSystemUnexpectedValueException
+     * @throws RuntimeException
+     */
+    public function isHidden(string $path): bool
+    {
+        $rules = $this->getMatchingAttributes($path);
         return $rules[static::ATTRIBUTE_VISIBILITY['name']] < 0 || $rules[static::ATTRIBUTE_ACCESS['name']] < 0;
     }
 
@@ -171,14 +198,32 @@ class PathIgnore
      * @throws FileSystemUnexpectedValueException
      * @throws RuntimeException
      */
-    public function isForbidden(Storage\Disk $storage): bool
+    public function isForbiddenStorage(Storage\Disk $storage): bool
     {
-        $rules = $this->getMatchingAttributes($storage);
+        $path = $storage->path()->real;
+        if ($storage->isDir()) {
+            $path = "{$path}/";
+        }
+        return $this->isForbidden($path);
+    }
+
+    /**
+     * @param string $path
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws FileSystemUnexpectedValueException
+     * @throws RuntimeException
+     */
+    public function isForbidden(string $path): bool
+    {
+        $rules = $this->getMatchingAttributes($path);
         return $rules[static::ATTRIBUTE_ACCESS['name']] < 0;
     }
 
     /**
-     * @param Storage\Disk $storage
+     * @param string $path
      * @return array
      * @throws AccessDeniedException
      * @throws ConstraintsException
@@ -186,13 +231,9 @@ class PathIgnore
      * @throws FileSystemUnexpectedValueException
      * @throws RuntimeException
      */
-    private function getMatchingAttributes(Storage\Disk $storage): array
+    private function getMatchingAttributes(string $path): array
     {
-        $rules = $this->fetchRules($storage);
-        $path = $storage->path()->real;
-        if ($storage->isDir()) {
-            $path = "{$path}/";
-        }
+        $rules = $this->fetchRules($path);
 
         $matchingRules = [];
         foreach ([static::ATTRIBUTE_ACCESS['name'], static::ATTRIBUTE_VISIBILITY['name']] as $type) {
@@ -200,7 +241,8 @@ class PathIgnore
         }
 
         $counter = 0;
-        foreach ($rules as $pattern => $type) {
+        foreach ($rules as $pattern => $values) {
+            [$type, $defaultPriority] = $values;
 
             ++$counter;
 
@@ -208,7 +250,7 @@ class PathIgnore
                 continue;
             }
 
-            $priority = $counter + count($matches);
+            $priority = $defaultPriority + $counter + count($matches);
 
             switch (true) {
                 case array_key_exists($type, static::ATTRIBUTE_ACCESS['values']):

@@ -1,5 +1,10 @@
 {% extends 'base.html.twig' %}
 
+{% block head %}
+    {{ parent() }}
+    {{ asset('/libs/hint/hint.css', 'preload:withFallback') }}
+{% endblock %}
+
 {% block site_title %}
     <div class="title is-5 navbar-link is-arrowless logo">
 
@@ -19,21 +24,41 @@
 {% block title %}Index of {{ index.relativePath() }}{% endblock %}
 
 {% block navbar_items %}
-    <div class="navbar-item field">
+
+    {% if git is defined %}
+        <div class="navbar-item field hint--bottom hint--rounded" aria-label="Open Website">
+            <div class="buttons">
+                <a class="button is-link is-light" target="_blank" rel="noopener noreferrer" href="{{ git.url }}">
+                    <i class="fas fa-link"></i>
+                    &nbsp;
+                    {% if 'github' in git.url %}
+                        <i class="fab fa-github"></i>
+                    {% elseif 'gitlab' in git.url %}
+                        <i class="fab fa-gitlab"></i>
+                    {% else %}
+                        <i class="fab fa-git-alt"></i>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="navbar-item field hint--bottom hint--rounded" aria-label="Download Zip">
         <div class="buttons">
-            <a class="button is-link is-light" href="{{ url.base }}/download/{{ index.relativePath() | ltrim('/') }}">
+            <a class="button is-black is-light" href="{{ url.base }}/download/{{ index.relativePath() | ltrim('/') }}">
                 <i class="fas fa-file-archive"></i>
                 &nbsp;
                 <i class="fas fa-arrow-down"></i>
             </a>
         </div>
     </div>
+
     {{ parent() }}
 {% endblock %}
 
 {% block main %}
     <div class="container is-fluid index">
-        <table class="table is-hoverable is-fullwidth">
+        <table class="table is-hoverable is-fullwidth" id="index">
             <thead>
             <tr>
                 <th colspan="2">name</th>
@@ -62,54 +87,53 @@
                 <tr>
                     {% if file.isDir() %}
 
-                        <td>
+                        <td data-sort='{{ file.path().basename }}/'>
                             <i class="fas fa-folder"></i>
                         </td>
 
-                        <td>
+                        <td data-sort='{{ file.path().basename }}/'>
                             <a href="{{ url.current }}/{{ file.path().basename | url_encode }}">
                                 {{ file.path().basename ~ '/' }}
                             </a>
                         </td>
 
-                        <td>
+                        <td data-sort='1'>
                             folder
                         </td>
 
-                        <td>
+                        <td data-sort='{{ file.getTime() }}'>
                             {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td>
+                        <td data-sort='999999999999999999999'>
                             -
                         </td>
 
 
                     {% else %}
 
-                        <td>
+                        <td data-sort='{{ file.path().filename }}'>
                             {# <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
                             <i class="fas fa-file"></i>
                         </td>
 
-                        <td>
+                        <td data-sort='{{ file.path().filename }}'>
                             <a href="{{ url.current }}/{{ file.path().filename | url_encode }}">
                                 <span class="filename">{{ file.path().filename }}</span>
                             </a>
                         </td>
 
-                        <td>
+                        <td data-sort='2'>
                             file
                         </td>
 
-                        <td>
+                        <td data-sort='{{ file.getTime() }}'>
                             {{ file.getTime | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td>
+                        <td data-sort='{{ file.getSize() }}'>
                             {{ file.getSize() | format_bytes(0) }}
                         </td>
-
 
                     {% endif %}
                 </tr>
@@ -139,4 +163,13 @@
         {% endif %}
     </div>
 
+{% endblock %}
+
+{% block footer %}
+    {{ parent }}
+
+    {{ asset('/libs/tablesort/dist/tablesort.min.js') }}
+    {{ asset('/libs/tablesort/dist/sorts/tablesort.number.min.js') }}
+
+    <script type="text/javascript">new Tablesort(document.getElementById('index'));</script>
 {% endblock %}

@@ -83,13 +83,19 @@ class Router
                 $this->renderer->displayAssetFile("{$filepath}.{$extension}");
             });
 
+            // Routes: search controller
             if (null !== $subject = $this->http->getQueryParameter('subject')) {
                 $routes->addRoute('GET', '/search/', function () use ($subject) {
                     $this->renderer->displayPathSearch($subject);
                 });
             }
 
-            // Routes: landing page
+            // Routes: download a zipped directory
+            $routes->addRoute('GET', '/download/{path:.*}', function (string $path) {
+                $this->renderer->downloadDirectoryZip($path);
+            });
+
+            // Routes: view directory index for path
             $routes->addRoute('GET', '/{path:.*}', function (string $path) {
                 $this->renderer->displayPath($path);
             });

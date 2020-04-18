@@ -2,7 +2,6 @@
 
 namespace ricwein\Indexer\Indexer;
 
-use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\Exception;
@@ -61,7 +60,7 @@ class Search
         // use glob-matching to find all matching files from cached index
         foreach ($this->index->list() as $filepath) {
 
-            if (@preg_match("/.*{$pattern}.*/", $filepath) !== 1) {
+            if (@preg_match("/.*{$pattern}.*/i", $filepath) !== 1) {
                 continue;
             }
 

@@ -3,7 +3,7 @@
 namespace ricwein\Indexer\Indexer;
 
 use Generator;
-use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
+use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\Indexer\Config\Config;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
@@ -12,7 +12,6 @@ use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Storage;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
-use ricwein\Indexer\Core\Cache;
 use ricwein\Templater\Exceptions\RuntimeException;
 
 class DirectoryList
@@ -26,9 +25,8 @@ class DirectoryList
      * @param Directory $rootDir
      * @param Directory $dir
      * @param Config $config
-     * @param Cache|null $cache
      */
-    public function __construct(Directory $rootDir, Directory $dir, Config $config, ?Cache $cache)
+    public function __construct(Directory $rootDir, Directory $dir, Config $config)
     {
         $this->rootDir = $rootDir;
         $this->directory = $dir;
@@ -131,9 +129,11 @@ class DirectoryList
     /**
      * @param Storage\Disk $storage
      * @return bool
+     * @throws AccessDeniedException
+     * @throws Exception
      * @throws FileSystemRuntimeException
-     * @throws PhpfastcacheInvalidArgumentException
      * @throws UnexpectedValueException
+     * @throws ConstraintsException
      * @internal
      */
     public function filterFileStorage(Storage\Disk $storage): bool
@@ -142,7 +142,7 @@ class DirectoryList
             return false;
         }
 
-        if ($this->pathIgnore->isHidden($storage)) {
+        if ($this->pathIgnore->isHiddenStorage($storage)) {
             return false;
         }
 

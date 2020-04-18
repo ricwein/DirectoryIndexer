@@ -287,7 +287,9 @@ class Renderer
                     }
                 }
 
+                /** @noinspection SlowArrayOperationsInLoopInspection */
                 $traced = array_merge($traced, $exceptionTrace);
+
                 $error = [
                     'code' => $entry->getCode(),
                     'type' => (new ReflectionClass($entry))->getShortName(),
@@ -462,7 +464,7 @@ class Renderer
         $storage = new Storage\Disk($rootDir, $path);
         $pathIgnore = new PathIgnore($rootDir, $this->config);
 
-        if (!$storage->isReadable() || $pathIgnore->isForbidden($storage)) {
+        if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
             throw new FileNotFoundException("Unable to open or read file: {$path}", 404);
         }
 
@@ -483,10 +485,35 @@ class Renderer
         $this->displayPathIndex($rootDir, new Directory($storage, Constraint::STRICT & ~Constraint::DISALLOW_LINK));
     }
 
+    /**
+     * @param Directory $rootDir
+     * @param Directory $dir
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws FileSystemException
+     * @throws FileSystemRuntimeException
+     */
     private function displayPathIndex(Directory $rootDir, Directory $dir): void
     {
-        $indexer = new DirectoryList($rootDir, $dir, $this->config, $this->cache,);
-        $this->display('page/index.html.twig', 200, ['index' => $indexer]);
+        $indexer = new DirectoryList($rootDir, $dir, $this->config);
+
+        $bindings = [
+            'index' => $indexer
+        ];
+
+        $gitConfig = $dir->file('.git/config');
+        if ($gitConfig->isFile()) {
+            $config = parse_ini_string($gitConfig->read(), true, INI_SCANNER_NORMAL);
+            $url = trim($config['remote origin']['url']);
+            if (strpos($url, 'http') === 0) {
+                $bindings['git'] = [
+                    'url' => $url
+                ];
+            }
+        }
+
+        $this->display('page/index.html.twig', 200, $bindings);
     }
 
     /**
@@ -503,14 +530,57 @@ class Renderer
     }
 
     /**
+     * @param string $path
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws FileSystemException
+     * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function downloadDirectoryZip(string $path): void
+    {
+        $rootDir = $this->getRootDir();
+        $storage = new Storage\Disk($rootDir, $path);
+        $pathIgnore = new PathIgnore($rootDir, $this->config);
+
+        if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
+            throw new FileNotFoundException("Unable to open or read file: {$path}", 404);
+        }
+
+        if (!$storage->isDir()) {
+            $this->streamFile(new File($storage));
+        }
+
+        $zipCache = new Storage\Disk\Temp();
+        $zip = new File\Zip($zipCache);
+        $zip->addDirectoryStorage($storage, '/', static function (Storage\Disk $storage) use ($pathIgnore): bool {
+            if (!$storage->isReadable()) {
+                return false;
+            }
+            if ($pathIgnore->isForbiddenStorage($storage)) {
+                return false;
+            }
+            if ($storage->path()->filename === PathIgnore::FILEIGNORE_FILENAME) {
+                return false;
+            }
+            return true;
+        });
+        $zip->commit();
+
+        $this->streamFile($zip, "{$storage->path()->basename}.zip");
+    }
+
+    /**
      * @param File $file
+     * @param string|null $asName
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
      */
-    private function streamFile(File $file): void
+    private function streamFile(File $file, ?string $asName = null): void
     {
         $size = $file->getSize();
         $rangeStart = 0;
@@ -532,6 +602,8 @@ class Renderer
             Http::sendStatusHeader(200);
         }
 
+        $filename = $asName ?? $file->path()->filename;
+
         Http::sendHeaders([
             'Content-Type' => $file->getType(true),
             'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
@@ -539,7 +611,7 @@ class Renderer
             'Accept-Ranges' => 'bytes',
             'Content-Length' => $rangeEnd - $rangeStart,
             'Content-Range' => "{$rangeStart}-{$rangeEnd}/{$size}",
-            'Content-Disposition' => ['attachment', "filename=\"{$file->path()->filename}\""],
+            'Content-Disposition' => ['attachment', "filename=\"{$filename}\""],
             'Content-Transfer-Encoding' => 'binary',
             'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
             'Connection' => 'close',

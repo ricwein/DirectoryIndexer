@@ -4,3 +4,9 @@
 [submodule "assets/libs/font-awesome"]
 	path = assets/libs/font-awesome
 	url = https://github.com/FortAwesome/Font-Awesome.git
+[submodule "assets/libs/tablesort"]
+	path = assets/libs/tablesort
+	url = https://github.com/tristen/tablesort.git
+[submodule "assets/libs/hint"]
+	path = assets/libs/hint
+	url = https://github.com/chinchang/hint.css.git
