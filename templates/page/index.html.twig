@@ -152,14 +152,22 @@
 
         {% set readmeFile = index.dir().file('README.md') %}
         {% if readmeFile.isFile() %}
-            {% cache 'readme_md_' ~ readmeFile.path().real %}
-                <div class="content">
-                    <h1 class="title">README.md</h1>
-                    <div class="box">
-                        {{ readmeFile.read() | render_markdown(url.current) }}
+            {% block readme %}
+                {% cache 'readme_md_' ~ readmeFile.path().real %}
+                    <div class="container is-fluid">
+                        <nav class="panel is-info">
+                            <p class="panel-heading">
+                                {{ readmeFile.path().filename }}
+                            </p>
+                            <div class="panel-block">
+                                <div class="content">
+                                    {{ readmeFile.read() | render_markdown(url.current) }}
+                                </div>
+                            </div>
+                        </nav>
                     </div>
-                </div>
-            {% endcache %}
+                {% endcache %}
+            {% endblock %}
         {% endif %}
     </div>
 

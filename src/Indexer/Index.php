@@ -113,7 +113,7 @@ class Index
                     return false;
                 }
 
-                if ($this->pathIgnore->isForbidden($file->getRealPath())) {
+                if ($this->pathIgnore->isForbiddenFileInfo($file)) {
                     return false;
                 }
 

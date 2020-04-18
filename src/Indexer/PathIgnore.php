@@ -11,6 +11,7 @@ use ricwein\FileSystem\Exceptions\RuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException as FileSystemUnexpectedValueException;
 use ricwein\FileSystem\File;
 use ricwein\FileSystem\Storage;
+use SplFileInfo;
 use UnexpectedValueException;
 
 class PathIgnore
@@ -175,6 +176,25 @@ class PathIgnore
     }
 
     /**
+     * @param SplFileInfo $file
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws FileSystemUnexpectedValueException
+     * @throws RuntimeException
+     */
+    public function isHiddenFileInfo(SplFileInfo $file): bool
+    {
+        $path = $file->getRealPath();
+        if ($file->isDir()) {
+            $path = "{$path}/";
+        }
+
+        return $this->isHidden($path);
+    }
+
+    /**
      * @param string $path
      * @return bool
      * @throws AccessDeniedException
@@ -202,6 +222,24 @@ class PathIgnore
     {
         $path = $storage->path()->real;
         if ($storage->isDir()) {
+            $path = "{$path}/";
+        }
+        return $this->isForbidden($path);
+    }
+
+    /**
+     * @param SplFileInfo $file
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws FileSystemUnexpectedValueException
+     * @throws RuntimeException
+     */
+    public function isForbiddenFileInfo(SplFileInfo $file): bool
+    {
+        $path = $file->getRealPath();
+        if ($file->isDir()) {
             $path = "{$path}/";
         }
         return $this->isForbidden($path);

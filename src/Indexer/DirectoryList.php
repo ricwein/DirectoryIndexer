@@ -13,6 +13,7 @@ use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Storage;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\Templater\Exceptions\RuntimeException;
+use SplFileInfo;
 
 class DirectoryList
 {
@@ -120,33 +121,33 @@ class DirectoryList
     {
         $iterator = $this->directory
             ->list(false)
-            ->filterStorage([$this, 'filterFileStorage']);
+            ->filterPath([$this, 'filterFileIndex']);
 
         yield from $iterator->dirs();
         yield from $iterator->files();
     }
 
     /**
-     * @param Storage\Disk $storage
+     * @param SplFileInfo $file
      * @return bool
      * @throws AccessDeniedException
+     * @throws ConstraintsException
      * @throws Exception
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
-     * @throws ConstraintsException
      * @internal
      */
-    public function filterFileStorage(Storage\Disk $storage): bool
+    public function filterFileIndex(SplFileInfo $file): bool
     {
-        if (!$storage->isReadable()) {
+        if (!$file->isReadable()) {
             return false;
         }
 
-        if ($this->pathIgnore->isHiddenStorage($storage)) {
+        if ($this->pathIgnore->isHiddenFileInfo($file)) {
             return false;
         }
 
-        if ($storage->path()->filename === PathIgnore::FILEIGNORE_FILENAME) {
+        if ($file->getFilename() === PathIgnore::FILEIGNORE_FILENAME) {
             return false;
         }
 
