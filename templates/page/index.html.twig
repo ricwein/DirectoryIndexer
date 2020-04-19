@@ -3,6 +3,11 @@
 {% block head %}
     {{ parent() }}
     {{ asset('/libs/hint/hint.css', 'preload:withFallback') }}
+    {% if config.debug %}
+        {{ asset('/libs/tingle/dist/tingle.css', 'preload:withFallback') }}
+    {% else %}
+        {{ asset('/libs/tingle/dist/tingle.min.css', 'preload:withFallback') }}
+    {% endif %}
 {% endblock %}
 
 {% block site_title %}
@@ -71,7 +76,7 @@
             <tbody>
 
             {% if not(index.isRoot()) %}
-                <tr data-sort-method='none' class="clickableRow" data-uri="{{ url.base }}{{ index.relativePathUp() | url_encode }}">
+                <tr data-sort-method='none' class="clickableRow" data-uri="{{ url.base }}{{ index.relativePathUp() }}">
                     <td>
                         <i class="fas fa-arrow-up"></i>
                     </td>
@@ -179,7 +184,16 @@
 
     {{ asset('/libs/tablesort/dist/tablesort.min.js', 'inline') }}
     {{ asset('/libs/tablesort/dist/sorts/tablesort.number.min.js', 'inline') }}
-    <script type="text/javascript">new Tablesort(document.getElementById('index'));</script>
+    <script type="text/javascript">
+        new Tablesort(document.getElementById('index'));
+    </script>
 
     {{ asset('/js/clickableRows.js', 'inline') }}
+
+    {% if config.debug %}
+        {{ asset('/libs/tingle/dist/tingle.js') }}
+    {% else %}
+        {{ asset('/libs/tingle/dist/tingle.min.js') }}
+    {% endif %}
+
 {% endblock %}

@@ -2,11 +2,13 @@
 
 namespace ricwein\Indexer\Core;
 
+use JsonException;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use ReflectionClass;
+use ricwein\FileSystem\Enum\Hash;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Indexer\DirectoryList;
 use ricwein\Indexer\Indexer\PathIgnore;
@@ -77,6 +79,7 @@ class Renderer
                 'current' => rtrim($this->http->getPathURL(null, $this->config->URLLocationPath), '/'),
                 'referrer' => $this->http->get('HTTP_REFERER', Http::SERVER),
             ],
+            'http' => $this->http,
             'date' => [
                 'year' => date('Y'),
             ],
@@ -421,7 +424,7 @@ class Renderer
             $storage = new Storage\Disk(__DIR__ . '/../../../');
         }
 
-        $rootDir = new Directory($storage, Constraint::STRICT & ~Constraint::DISALLOW_LINK);
+        $rootDir = new Directory($storage);
         if (!$rootDir->isDir() || !$rootDir->isReadable()) {
             throw new RuntimeException("Unable to read root directory: {$rootDir->path()->raw}", 500);
         }
@@ -457,7 +460,7 @@ class Renderer
         $rootDir = $this->getRootDir();
 
         $path = ltrim($path, '/');
-        if (empty($path)) {
+        if ($path === '') {
             $this->displayPathIndex($rootDir, $rootDir);
         }
 
@@ -465,7 +468,7 @@ class Renderer
         $pathIgnore = new PathIgnore($rootDir, $this->config);
 
         if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
-            throw new FileNotFoundException("Unable to open or read file: {$path}", 404);
+            throw new FileNotFoundException("File not found: {$path}", 404);
         }
 
 
@@ -482,7 +485,7 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        $this->displayPathIndex($rootDir, new Directory($storage, Constraint::STRICT & ~Constraint::DISALLOW_LINK));
+        $this->displayPathIndex($rootDir, new Directory($storage));
     }
 
     /**
@@ -502,18 +505,94 @@ class Renderer
             'index' => $indexer
         ];
 
+        // git root directory
         $gitConfig = $dir->file('.git/config');
-        if ($gitConfig->isFile()) {
-            $config = parse_ini_string($gitConfig->read(), true, INI_SCANNER_NORMAL);
-            $url = trim($config['remote origin']['url']);
-            if (strpos($url, 'http') === 0) {
+        if ($gitConfig->isFile() && null !== $url = $this->parseGitConfig($gitConfig)) {
+            $bindings['git'] = [
+                'url' => $url
+            ];
+            $this->display('page/index.html.twig', 200, $bindings);
+        }
+
+        // git submodule, resolve .git/config ref first
+        $gitRootRef = $dir->file('.git', Constraint::LOOSE);
+        if ($gitRootRef->isFile()) {
+            $gitRootPath = trim($gitRootRef->read());
+
+            if (strpos($gitRootPath, 'gitdir:') === 0) {
+                $gitRootPath = trim(substr($gitRootPath, strlen('gitdir:')));
+            }
+
+            $gitConfig = $dir->file($gitRootPath . '/config');
+            if ($gitConfig->isFile() && null !== $url = $this->parseGitConfig($gitConfig)) {
                 $bindings['git'] = [
                     'url' => $url
                 ];
+                $this->display('page/index.html.twig', 200, $bindings);
             }
         }
 
         $this->display('page/index.html.twig', 200, $bindings);
+    }
+
+    /**
+     * @param File $gitConfig
+     * @return string|null
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     */
+    private function parseGitConfig(File $gitConfig): ?string
+    {
+        $config = parse_ini_string($gitConfig->read(), true, INI_SCANNER_NORMAL);
+        $url = trim($config['remote origin']['url']);
+        if (strpos($url, 'http') === 0) {
+            return $url;
+        }
+        return null;
+    }
+
+    /**
+     * @param string $path
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws FileSystemException
+     * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
+     * @throws JsonException
+     */
+    public function displayPathInfo(string $path): void
+    {
+        $rootDir = $this->getRootDir();
+        $storage = new Storage\Disk($rootDir, $path);
+        $pathIgnore = new PathIgnore($rootDir, $this->config);
+
+        if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
+            throw new FileNotFoundException("File not found: {$path}", 404);
+        }
+
+        $file = $storage->isDir() ? new Directory($storage, $rootDir->storage()->getConstraints()) : new File($storage, $rootDir->storage()->getConstraints());
+
+        $info = [
+            'hash' => [
+                'md5' => $file->getHash(Hash::CONTENT, 'md5'),
+                'sha1' => $file->getHash(Hash::CONTENT, 'sha1'),
+                'sha256' => $file->getHash(Hash::CONTENT, 'sha256'),
+            ],
+            'filename' => $file->isDir() ? $file->path()->basename : $file->path()->filename,
+            'size' => $file->getSize(),
+        ];
+
+        Http::sendStatusHeader(200);
+        Http::sendHeaders([
+            'Content-Type' => 'application/json; charset=utf8',
+            'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
+            'Pragma' => 'no-cache',
+        ]);
+
+        echo json_encode($info, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT, 512);
+        exit(0);
     }
 
     /**
@@ -545,7 +624,7 @@ class Renderer
         $pathIgnore = new PathIgnore($rootDir, $this->config);
 
         if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
-            throw new FileNotFoundException("Unable to open or read file: {$path}", 404);
+            throw new FileNotFoundException("File not found: {$path}", 404);
         }
 
         if (!$storage->isDir()) {

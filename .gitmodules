@@ -10,3 +10,6 @@
 [submodule "assets/libs/hint"]
 	path = assets/libs/hint
 	url = https://github.com/chinchang/hint.css.git
+[submodule "assets/libs/tingle"]
+	path = assets/libs/tingle
+	url = https://github.com/robinparisi/tingle.git

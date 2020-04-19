@@ -2,5 +2,5 @@
 /docker-compose.yml
 /docker-compose.yaml
 /vendor/
-config/
-/var
+/config/
+/var/

@@ -1,0 +1,12 @@
+table {
+  border-collapse: separate; /* Don't collapse */
+  th {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 78px;
+  }
+
+  tr.clickableRow {
+    cursor: pointer;
+  }
+}

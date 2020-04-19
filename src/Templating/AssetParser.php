@@ -75,7 +75,7 @@ class AssetParser
             ['{', '}', '(', ')', '/', '\\', '@', ':'],
             ['|', '|', '|', '|', '.', '.', '-', '_'],
             sprintf(
-                "asset_%s|%d|%d",
+                'asset_%s|%d|%d',
                 str_replace(['/', '\\'], '.', ltrim($assetFile->path()->filepath, '/')),
                 $assetFile->getTime(),
                 $this->config->development ? 1 : 0,

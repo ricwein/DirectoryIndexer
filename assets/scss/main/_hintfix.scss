@@ -1,0 +1,8 @@
+.hint--right:after, [aria-label]:after,
+.hint--left:after, [aria-label]:after,
+.hint--bottom:after, [aria-label]:after,
+.hint--top:after, [aria-label]:after,
+{
+  text-align: left;
+  white-space: pre;
+}

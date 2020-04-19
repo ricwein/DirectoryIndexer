@@ -1,0 +1,58 @@
+@import "../config/colors";
+@import "dark/bulma";
+@import "dark/error";
+
+.container.index {
+  table {
+    a {
+      color: $color-dark-foreground;
+    }
+  }
+}
+
+.is-debug-trace {
+  code {
+    color: $color-dark-foreground;
+  }
+}
+
+.navbar {
+  .navbar-link.logo {
+    color: $color-dark-foreground;
+  }
+}
+
+pre.code-snippet {
+  background-color: lighten($color-dark-background, 3%);
+
+  ol {
+    li {
+      color: darken(gray, 25%);
+
+      & > span {
+        color: lighten(gray, 25%);
+      }
+
+      &.dist-0 {
+        background-color: lighten(mix($color-dark-background, red, 0.8), 5%);
+      }
+
+      &.dist-1 {
+        background-color: lighten(mix($color-dark-background, red, 0.85), 3%);
+      }
+
+      &.dist-2 {
+        background-color: lighten(mix($color-dark-background, red, 0.9), 1%);
+      }
+
+    }
+  }
+}
+
+th[role=columnheader]:not(.no-sort):after {
+  border-color: #D0D0D0 transparent;
+}
+
+table th {
+  background: $color-dark-background;
+}

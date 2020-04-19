@@ -94,7 +94,7 @@ class Warmup extends Command
         $files = $index->list(static function (?SplFileInfo $file = null) use ($progress, $rootDir) {
             if ($file !== null && $file->isDir()) {
                 $path = ltrim(str_replace($rootDir->path()->real, '', $file->getRealPath()), '/');
-                $progress->setMessage("indexing: {$path}");
+                $progress->setMessage($path);
             }
             $progress->advance();
         });

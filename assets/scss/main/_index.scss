@@ -1,0 +1,10 @@
+.container.index {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+
+  table {
+    tr td:first-of-type {
+      width: 1px;
+    }
+  }
+}

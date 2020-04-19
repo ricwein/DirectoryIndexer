@@ -95,6 +95,11 @@ class Router
                 $this->renderer->downloadDirectoryZip($path);
             });
 
+            // Routes: download a zipped directory
+            $routes->addRoute('GET', '/info/{path:.*}', function (string $path) {
+                $this->renderer->displayPathInfo($path);
+            });
+
             // Routes: view directory index for path
             $routes->addRoute('GET', '/{path:.*}', function (string $path) {
                 $this->renderer->displayPath($path);

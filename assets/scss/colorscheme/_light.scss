@@ -1,0 +1,56 @@
+@import "../config/colors";
+
+.container.index {
+  table {
+    a {
+      color: $color-light-foreground;
+    }
+  }
+}
+
+.is-debug-trace {
+  code {
+    color: $color-light-foreground;
+  }
+}
+
+.navbar {
+  .navbar-link.logo {
+    color: $color-light-foreground;
+  }
+}
+
+pre.code-snippet {
+  background-color: darken($color-light-background, 3%);
+
+  ol {
+    li {
+      color: lighten(gray, 25%);
+
+      & > span {
+        color: darken(gray, 25%);
+      }
+
+      &.dist-0 {
+        background-color: darken(mix($color-light-background, red, 0.8), 5%);
+      }
+
+      &.dist-1 {
+        background-color: darken(mix($color-light-background, red, 0.85), 3%);
+      }
+
+      &.dist-2 {
+        background-color: darken(mix($color-light-background, red, 0.9), 1%);
+      }
+
+    }
+  }
+}
+
+th[role=columnheader]:not(.no-sort):after {
+  border-color: #404040 transparent;
+}
+
+table th {
+  background: $color-light-background;
+}

@@ -10,7 +10,7 @@
 
         {# Document Title #}
         <title>{% block title %}{{ template.name | capitalize }}{% endblock %}</title>
-        <meta name="description" content="{{ config.name }}">
+        <meta name="description" content="Index of {{ http.getDomain() }}">
         <meta name=robots content="index, follow">
 
         {# Base URL to use for all relative URLs contained within the document #}

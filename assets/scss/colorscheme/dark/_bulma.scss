@@ -1,0 +1,192 @@
+@import "../../config/colors";
+
+html, body {
+  background-color: $color-dark-background !important;
+}
+
+.table {
+  background-color: transparent;
+  color: $color-dark-foreground;
+
+  &.is-hoverable tbody tr:not(.is-selected):hover {
+    background-color: lighten($color-dark-background, 10%);
+  }
+
+
+  & td, & th {
+    border-color: lighten($color-dark-background, 15%);
+  }
+
+  & thead td, & thead th {
+    color: $color-dark-foreground;
+  }
+
+}
+
+.title, .label, .list-item:not(a) {
+  color: $color-dark-foreground;
+}
+
+.list-item:not(:last-child) {
+  border-color: lighten($color-dark-background, 15%);
+}
+
+b, strong {
+  color: lighten($color-dark-foreground, 10%);
+}
+
+.subtitle {
+  color: darken($color-dark-foreground, 10%);
+}
+
+.content {
+  h1, h2, h3, h4, h5, h6 {
+    color: $color-dark-foreground;
+  }
+
+  & blockquote {
+    background-color: lighten($color-dark-background, 15%);
+    border-color: lighten($color-dark-background, 20%);
+  }
+}
+
+.panel-block {
+  color: darken($color-dark-foreground, 15%);
+}
+
+.control.has-icons-left .icon,
+.control.has-icons-right .icon {
+  color: lighten($color-dark-background, 25%);
+}
+
+.navbar, .navbar-menu.is-active {
+  background-color: lighten($color-dark-background, 4%);
+  border-bottom: none;
+}
+
+.navbar-burger {
+  color: $color-dark-foreground;
+
+  &:hover {
+    color: darken($color-dark-foreground, 30%);
+  }
+}
+
+.navbar-item, .navbar-link {
+  color: $color-dark-foreground;
+
+  &:hover {
+    background-color: lighten($color-dark-background, 4%);
+  }
+}
+
+.tag {
+  &, strong, b {
+    color: black;
+  }
+
+  &:not(body).is-warning {
+    background-color: lighten(mix(orange, yellow, 80%), 8%);
+  }
+
+  &:not(body).is-danger {
+    background-color: lighten(mix(orange, red, 30%), 10%);
+  }
+}
+
+.box {
+  color: darken($color-dark-foreground, 15%);
+  background-color: darken($color-dark-background, 2%);
+  box-shadow: 0 0.5em 1em -0.125em rgba(lighten($color-dark-background, 20%), 0.1), 0 0 0 1px rgba(lighten($color-dark-background, 20%), 0.02);
+
+  table th {
+    background-color: darken($color-dark-background, 2%);
+  }
+}
+
+.panel {
+  color: darken($color-dark-foreground, 15%);
+  background-color: lighten($color-dark-background, 5%);
+  box-shadow: 0 0.5em 1em -0.125em rgba(lighten($color-dark-background, 50%), 0.1), 0 0 0 1px rgba(lighten($color-dark-background, 50%), 0.02);
+
+  &.is-info .panel-heading {
+    background-color: darken(mix(#3298dc, $color-dark-background, 0.7), 5%);
+  }
+
+  table th {
+    background-color: lighten($color-dark-background, 5%);
+  }
+}
+
+.message {
+  &.is-success {
+    background-color: darken(mix(green, $color-dark-background), 15%);
+  }
+
+  &.is-warning {
+    background-color: darken(mix(#ffdd57, $color-dark-background), 32%);
+  }
+}
+
+pre {
+  background-color: $color-dark-background;
+  color: $color-dark-foreground;
+}
+
+.input, .textarea, .select select {
+  background-color: $color-dark-background;
+  color: $color-dark-foreground;
+  box-shadow: rgba(lighten($color-dark-background, 20%), 0.05) 0px 0.0625em 0.125em inset;
+
+  &::placeholder, &::-webkit-input-placeholder {
+    color: darken(mix($color-dark-foreground, $color-dark-background, 0.5), 10%);
+  }
+}
+
+.button {
+
+  &.is-black {
+    background-color: $color-dark-foreground;
+    color: $color-dark-background;
+
+    &:hover {
+      background-color: darken($color-dark-foreground, 8%);
+      color: lighten($color-dark-background, 10%);
+    }
+  }
+
+  &.is-light {
+    background-color: lighten($color-dark-background, 15%);
+    color: rgba(255, 255, 255, 0.9);
+
+    &:hover {
+      background-color: lighten($color-dark-background, 10%);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    &.is-link {
+      background-color: darken(mix($color-dark-background, rgb(50, 115, 220)), 20%);
+      color: lighten(rgb(50, 115, 220), 10%);
+
+      &:hover {
+        background-color: darken(mix($color-dark-background, rgb(50, 115, 220)), 18%);
+        color: lighten(rgb(50, 115, 220), 10%);
+      }
+    }
+
+    &.is-danger {
+      background-color: darken(mix($color-dark-background, rgb(204, 15, 53)), 10%);
+      color: lighten(rgb(204, 15, 53), 20%);
+
+      &:hover {
+        background-color: darken(mix($color-dark-background, rgb(204, 15, 53)), 8%);
+        color: lighten(rgb(204, 15, 53), 15%);
+      }
+    }
+  }
+
+}
+
+.breadcrumb li.is-active a {
+  color: $color-dark-foreground;
+}
