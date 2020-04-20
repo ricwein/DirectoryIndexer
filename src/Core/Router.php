@@ -90,19 +90,15 @@ class Router
                 });
             }
 
-            // Routes: download a zipped directory
-            $routes->addRoute('GET', '/download/{path:.*}', function (string $path) {
-                $this->renderer->downloadDirectoryZip($path);
-            });
-
-            // Routes: download a zipped directory
-            $routes->addRoute('GET', '/info/{path:.*}', function (string $path) {
-                $this->renderer->displayPathInfo($path);
-            });
-
-            // Routes: view directory index for path
+            // Routes: view directory index for path, support for: download and info queries
             $routes->addRoute('GET', '/{path:.*}', function (string $path) {
-                $this->renderer->displayPath($path);
+                if ($this->http->getQueryParameter('info') !== null) {
+                    $this->renderer->displayPathInfo($path);
+                } elseif ($this->http->getQueryParameter('download') !== null) {
+                    $this->renderer->downloadDirectoryZip($path);
+                } else {
+                    $this->renderer->displayPath($path);
+                }
             });
         };
     }

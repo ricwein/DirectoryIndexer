@@ -50,7 +50,7 @@
 
     <div class="navbar-item field hint--bottom hint--rounded" aria-label="Download Zip">
         <div class="buttons">
-            <a class="button is-black is-light" href="{{ url.base }}/download/{{ index.relativePath() | ltrim('/') }}">
+            <a class="button is-black is-light" href="{{ url.base }}/{{ index.relativePath() | ltrim('/') }}?download">
                 <i class="fas fa-file-archive"></i>
                 &nbsp;
                 <i class="fas fa-arrow-down"></i>
@@ -70,6 +70,7 @@
                 <th data-sort-column-key="type">Type</th>
                 <th data-sort-column-key="modified" data-sort-method='number'>Last Modified</th>
                 <th data-sort-column-key="size" data-sort-method='number'>Size</th>
+                <th data-sort-method='none'></th>
             </tr>
             </thead>
 
@@ -80,7 +81,7 @@
                     <td>
                         <i class="fas fa-arrow-up"></i>
                     </td>
-                    <td colspan="4">
+                    <td colspan="5">
                         <a href="{{ url.base }}{{ index.relativePathUp() }}">
                             <span class="filename">../</span>
                         </a>
@@ -113,6 +114,10 @@
                         <td data-sort-column-key="size" data-sort='999999999999999999999'>
                             -
                         </td>
+
+                        <td>
+                            <a class="button is-link is-light view-modal-info" href="{{ url.current }}/{{ file.path().basename | url_encode }}?info"><i class="fas fa-ellipsis-v"></i></a>
+                        </td>
                     </tr>
 
                 {% else %}
@@ -140,6 +145,10 @@
                         <td data-sort-column-key="size" data-sort='{{ file.getSize() }}'>
                             {{ file.getSize() | format_bytes(0) }}
                         </td>
+
+                        <td>
+                            <a class="button is-link is-light view-modal-info" href="{{ url.current }}/{{ file.path().filename | url_encode }}?info"><i class="fas fa-ellipsis-v"></i></a>
+                        </td>
                     </tr>
 
                 {% endif %}
@@ -147,7 +156,7 @@
             {% else %}
 
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         <p>nothing here</p>
                     </td>
                 </tr>
