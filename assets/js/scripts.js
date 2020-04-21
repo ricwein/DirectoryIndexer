@@ -47,14 +47,7 @@ function openModalDetails(url, btn) {
             return;
         }
         let info = JSON.parse(request.responseText);
-        modal.setContent(
-            "<h1>" + info.filename + "</h1>" +
-            "<div class='content'><ul>" +
-            "<li><strong>MD5</strong>: " + info.hash.md5 + "</li>" +
-            "<li><strong>SHA1</strong>: " + info.hash.sha1 + "</li>" +
-            "<li><strong>SHA256</strong>: " + info.hash.sha256 + "</li>" +
-            "</ul></div>"
-        );
+        modal.setContent(buildPopupContent(info));
 
         btn.innerHTML = originalBtnContent;
         btn.classList.remove("is-link");
@@ -64,6 +57,27 @@ function openModalDetails(url, btn) {
     };
 
     request.send();
+}
+
+function buildPopupContent(info) {
+    if (info.type === 'dir') {
+        return "<h1>" + info.filename + "</h1>" +
+            "<div class='content'><ul>" +
+            "<li><strong>Size</strong>: " + info.size.hr + "</li>" +
+            "</ul></div>";
+    }
+
+    if (info.type === 'file') {
+        return "<h1>" + info.filename + "</h1>" +
+            "<div class='content'><ul>" +
+            "<li><strong>Size</strong>: " + info.size.hr + "</li>" +
+            "<li><strong>MD5</strong>: " + info.hash.md5 + "</li>" +
+            "<li><strong>SHA1</strong>: " + info.hash.sha1 + "</li>" +
+            "<li><strong>SHA256</strong>: " + info.hash.sha256 + "</li>" +
+            "</ul></div>";
+    }
+
+    return "ERROR";
 }
 
 function fetchingInfoHasFailed(btn) {

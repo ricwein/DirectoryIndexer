@@ -8,9 +8,9 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use ReflectionClass;
-use ricwein\FileSystem\Enum\Hash;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Indexer\DirectoryList;
+use ricwein\Indexer\Indexer\FileInfo;
 use ricwein\Indexer\Indexer\PathIgnore;
 use ricwein\Indexer\Indexer\Search;
 use ricwein\Indexer\Network\Http;
@@ -424,7 +424,7 @@ class Renderer
             $storage = new Storage\Disk(__DIR__ . '/../../../');
         }
 
-        $rootDir = new Directory($storage);
+        $rootDir = new Directory($storage, Constraint::STRICT & ~Constraint::DISALLOW_LINK);
         if (!$rootDir->isDir() || !$rootDir->isReadable()) {
             throw new RuntimeException("Unable to read root directory: {$rootDir->path()->raw}", 500);
         }
@@ -485,7 +485,7 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        $this->displayPathIndex($rootDir, new Directory($storage));
+        $this->displayPathIndex($rootDir, new Directory($storage, $rootDir->storage()->getConstraints()));
     }
 
     /**
@@ -572,17 +572,11 @@ class Renderer
             throw new FileNotFoundException("File not found: {$path}", 404);
         }
 
-        $file = $storage->isDir() ? new Directory($storage, $rootDir->storage()->getConstraints()) : new File($storage, $rootDir->storage()->getConstraints());
+        if (strpos($storage->path()->real, $rootDir->path()->real) !== 0) {
+            throw new RuntimeException('Access denied.', 403);
+        }
 
-        $info = [
-            'hash' => [
-                'md5' => $file->getHash(Hash::CONTENT, 'md5'),
-                'sha1' => $file->getHash(Hash::CONTENT, 'sha1'),
-                'sha256' => $file->getHash(Hash::CONTENT, 'sha256'),
-            ],
-            'filename' => $file->isDir() ? $file->path()->basename : $file->path()->filename,
-            'size' => $file->getSize(),
-        ];
+        $info = (new FileInfo($storage, $rootDir->storage()->getConstraints(), $this->cache))->getInfo();
 
         Http::sendStatusHeader(200);
         Http::sendHeaders([
@@ -625,6 +619,10 @@ class Renderer
 
         if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
             throw new FileNotFoundException("File not found: {$path}", 404);
+        }
+
+        if (strpos($storage->path()->real, $rootDir->path()->real) !== 0) {
+            throw new RuntimeException('Access denied.', 403);
         }
 
         if (!$storage->isDir()) {

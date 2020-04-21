@@ -10,19 +10,23 @@ use Phpfastcache\Exceptions\PhpfastcacheInvalidConfigurationException;
 use ReflectionException;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
+use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\Exception;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Helper\Constraint;
+use ricwein\FileSystem\Helper\Path;
 use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Core\Cache;
+use ricwein\Indexer\Indexer\FileInfo;
 use ricwein\Indexer\Indexer\Index;
 use RuntimeException;
 use SplFileInfo;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressIndicator;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use ricwein\Indexer\Config\Config;
 
@@ -32,7 +36,8 @@ class Warmup extends Command
     {
         $this
             ->setDescription('Directory Index Cache WarmUp.')
-            ->setHelp('This command indexes the whole Directory recursively. This might take a while.');
+            ->setHelp('This command indexes the whole Directory recursively. This might take a while.')
+            ->addOption('force-index', null, InputOption::VALUE_NONE, 'Force-index Directory by flushing the cache first.');
     }
 
     /**
@@ -78,18 +83,22 @@ class Warmup extends Command
         if (!$rootDir->isDir() || !$rootDir->isReadable()) {
             throw new RuntimeException("Unable to read root directory: {$rootDir->path()->raw}", 500);
         }
-
-        $output->writeln($formatter->formatSection('Setup', 'cleanup cache...'));
-        $cache->clear();
-        $output->writeln($formatter->formatSection('Setup', 'cleanup cache... <info>done</info>'));
-
-        $output->writeln($formatter->formatSection('WarmUp', 'indexing...'));
-
         $timeStart = time();
+        $lastTime = $timeStart;
+
+        // STEP 1: clean cache
+        if ($input->getOption('force-index')) {
+            $output->writeln($formatter->formatSection('Setup', 'cleanup cache...'));
+            $cache->clear();
+            $output->writeln(sprintf(' - <info>done</info> (%ds)', time() - $lastTime));
+        }
+        $lastTime = time();
+
+        // STEP 2: index directories and files
+        $output->writeln($formatter->formatSection('Indexing', 'traverse directory...'));
         $progress = new ProgressIndicator($output);
         $progress->start('indexing: /');
         $index = new Index($rootDir, $config, $cache);
-
 
         $files = $index->list(static function (?SplFileInfo $file = null) use ($progress, $rootDir) {
             if ($file !== null && $file->isDir()) {
@@ -98,14 +107,46 @@ class Warmup extends Command
             }
             $progress->advance();
         });
-        $timeEnd = time();
 
-        $progress->finish('<info>done</info>');
+        $progress->finish(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+        $lastTime = time();
 
-        $output->writeln($formatter->formatSection('WarmUp', sprintf(
+        // STEP 3: create file-infos for each file
+        $output->writeln($formatter->formatSection('Indexing', 'calculating file-hashes...'));
+        $progress = new ProgressIndicator($output);
+        $progress->start('hashing: /');
+
+        foreach ($files as $file) {
+            $storage = new Storage\Disk($rootDir, $file);
+
+            if (strpos($storage->path()->real, $rootDir->path()->real) !== 0) {
+                if ($output->isVerbose()) {
+                    $output->writeln("\n  ↳ <fg=yellow>[WARNING]</> skipping {$storage->path()->filename} - not withing safepath.");
+                }
+                continue;
+            }
+
+            if ($storage->isDir()) {
+                $path = ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/');
+                $progress->setMessage($path);
+            }
+            $fileInfo = new FileInfo($storage, $rootDir->storage()->getConstraints(), $cache);
+            try {
+                $fileInfo->getInfo();
+            } catch (ConstraintsException $e) {
+                if ($output->isVerbose()) {
+                    $output->writeln("\n  ↳ <fg=yellow>[WARNING]</> skipping {$storage->path()->filename} - {$e->getMessage()}.");
+                }
+            }
+
+            $progress->advance();
+        }
+        $progress->finish(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+
+        $output->writeln($formatter->formatSection('Indexing', sprintf(
             'Finished indexing %s files in %ds.',
             number_format(count($files), 0, ',', '.'),
-            $timeEnd - $timeStart
+            time() - $timeStart
         )));
 
         return 0;
