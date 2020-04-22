@@ -1,7 +1,10 @@
+@import "../../config/colors";
+
 .tingle-modal-box {
-  background-color: darkslategray !important;
+  color: $color-dark-foreground;
+  background-color: mix(darkslategray, $color-dark-background, 0.5) !important;
 
   .tingle-modal-box__footer {
-    background-color: dimgray !important;
+    background-color: mix(dimgray, $color-dark-background, 0.5) !important;
   }
 }

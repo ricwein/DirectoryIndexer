@@ -16,6 +16,7 @@ use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Core\Cache;
 use ricwein\Templater\Config;
 use ricwein\Templater\Engine\CoreFunctions;
+use ricwein\Templater\Exceptions\UnexpectedValueException as TemplateUnexpectedValueException;
 
 class FileInfo
 {
@@ -62,6 +63,7 @@ class FileInfo
      * @throws RuntimeException
      * @throws UnexpectedValueException
      * @throws UnsupportedException
+     * @throws TemplateUnexpectedValueException
      */
     public function getInfo(): array
     {
@@ -93,7 +95,7 @@ class FileInfo
      * @throws RuntimeException
      * @throws UnexpectedValueException
      * @throws UnsupportedException
-     * @throws \ricwein\Templater\Exceptions\UnexpectedValueException
+     * @throws TemplateUnexpectedValueException
      */
     private function fetchInfo(): array
     {

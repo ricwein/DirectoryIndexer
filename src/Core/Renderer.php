@@ -132,6 +132,9 @@ class Renderer
             $templater = new Templater($this->getTemplaterConfig(), $this->cache->getDriver());
             $templater->addFunction(new BaseFunction('asset', [$this, 'convertAssetURL']));
             $templater->addFunction(new BaseFunction('render_markdown', [$this, 'convertMarkdown']));
+            $templater->addFunction(new BaseFunction('get_file_info', function (Storage $storage): FileInfo {
+                return new FileInfo($storage, $storage->getConstraints(), $this->cache);
+            }));
             $response = $templater->render($templateFile, $bindings, $filter);
 
             echo $response;

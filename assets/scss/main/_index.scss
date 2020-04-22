@@ -44,8 +44,7 @@ tr.clickableRow {
     & td {
       border-left-color: var(--main-accent-color) !important;
       border-right-color: var(--main-accent-color) !important;
-      border-bottom-color: var(--main-accent-color);
+      border-bottom-color: var(--main-accent-color) !important;
     }
   }
-
 }

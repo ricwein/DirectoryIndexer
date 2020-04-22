@@ -12,7 +12,6 @@
 
 {% block site_title %}
     <div class="title is-5 navbar-link is-arrowless logo">
-
         <a class="navbar-link is-arrowless" href="{{ url.base }}">Index of</a>
         <nav class="breadcrumb path" aria-label="path">
             <ul>
@@ -30,10 +29,11 @@
 
 {% block navbar_items %}
 
-    {% if git is defined %}
-        <div class="navbar-item field hint--bottom hint--rounded" aria-label="Open Website">
-            <div class="buttons">
-                <a class="button is-link is-light" target="_blank" rel="noopener noreferrer" href="{{ git.url }}">
+    <div class="navbar-item field">
+        <div class="buttons">
+
+            {% if git is defined %}
+                <a class="button is-link is-light hint--bottom hint--rounded" target="_blank" rel="noopener noreferrer" href="{{ git.url }}" aria-label="Open Website">
                     <i class="fas fa-link"></i>
                     &nbsp;
                     {% if 'github' in git.url %}
@@ -44,23 +44,15 @@
                         <i class="fab fa-git-alt"></i>
                     {% endif %}
                 </a>
-            </div>
-        </div>
-    {% endif %}
+            {% endif %}
 
-    {% if not(index.isRoot()) %}
-        <div class="navbar-item field hint--bottom hint--rounded" aria-label="View Info">
-            <div class="buttons">
-                <a class="button is-link is-light view-modal-info" href="{{ url.base }}/{{ index.relativePath() | url_encode }}?info">
+            {% if not(index.isRoot()) %}
+                <a class="button is-link is-light view-modal-info hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | url_encode }}?info" aria-label="View Info">
                     <i class="fas fa-eye"></i>
                 </a>
-            </div>
-        </div>
-    {% endif %}
+            {% endif %}
 
-    <div class="navbar-item field hint--bottom hint--rounded" aria-label="Download Zip">
-        <div class="buttons">
-            <a class="button is-black is-light" href="{{ url.base }}/{{ index.relativePath() | ltrim('/') }}?download">
+            <a class="button is-black is-light hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | ltrim('/') }}?download" aria-label="Download Zip">
                 <i class="fas fa-file-archive"></i>
                 &nbsp;
                 <i class="fas fa-arrow-down"></i>
@@ -121,9 +113,17 @@
                             {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td data-sort-column-key="size" data-sort='999999999999999999999'>
-                            -
-                        </td>
+                        {% set fileInfo = get_file_info(file.storage()) %}
+                        {% if fileInfo.isCached() %}
+                            {% set info = fileInfo.getInfo() %}
+                            <td data-sort-column-key="size" data-sort='{{ info.size.bytes }}'>
+                                {{ info.size.bytes | format_bytes(1) }}
+                            </td>
+                        {% else %}
+                            <td data-sort-column-key="size" data-sort='999999999999999'>
+                                -
+                            </td>
+                        {% endif %}
 
                         <td>
                             <a class="button is-link is-light view-modal-info" href="{{ url.current }}/{{ file.path().basename | url_encode }}?info"><i class="fas fa-eye"></i></a>
@@ -153,7 +153,7 @@
                         </td>
 
                         <td data-sort-column-key="size" data-sort='{{ file.getSize() }}'>
-                            {{ file.getSize() | format_bytes(0) }}
+                            {{ file.getSize() | format_bytes(1) }}
                         </td>
 
                         <td>

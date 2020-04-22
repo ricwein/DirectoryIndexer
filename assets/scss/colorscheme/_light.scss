@@ -38,3 +38,7 @@ tr.clickableRow {
     box-shadow: 0 0.5em 1em -0.125em rgba(lighten($color-light-foreground, 20%), 0.3), 0 0 0 1px rgba(lighten($color-light-foreground, 20%), 0.1);
   }
 }
+
+.tingle-modal {
+  background-color: rgba(80, 80, 80, 0.85) !important;
+}

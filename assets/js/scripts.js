@@ -29,7 +29,7 @@ function openModalDetails(url, btn) {
 
     var modal = new tingle.modal({
         footer: true,
-        cssClass: ['box', 'content'],
+        cssClass: ['container', 'is-fluid'],
         closeLabel: "Close",
     });
     modal.addFooterBtn('Close', 'button is-danger is-pulled-right', function () {
