@@ -2,6 +2,7 @@
 
 namespace ricwein\Indexer\Commands\Cache;
 
+use Intervention\Image\Exception\NotReadableException as INotReadableException;
 use Phpfastcache\Exceptions\PhpfastcacheDriverCheckException;
 use Phpfastcache\Exceptions\PhpfastcacheDriverException;
 use Phpfastcache\Exceptions\PhpfastcacheDriverNotFoundException;
@@ -12,6 +13,7 @@ use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\Exception;
+use ricwein\FileSystem\Exceptions\Exception as FileSystemException;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
@@ -135,9 +137,9 @@ class Warmup extends Command
             try {
                 $fileInfo->getInfo();
                 $fileInfo->getPreview();
-            } catch (ConstraintsException $e) {
+            } catch (ConstraintsException|FileSystemException|INotReadableException $e) {
                 if ($output->isVerbose()) {
-                    $output->writeln("\n  ↳ <fg=yellow>[WARNING]</> skipping {$storage->path()->filename} - {$e->getMessage()}.");
+                    $output->writeln("\n  ↳ <fg=yellow>[WARNING]</> skipping {$storage->path()->filename} - {$e->getMessage()}.\n");
                 }
             }
 

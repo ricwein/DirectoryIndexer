@@ -123,7 +123,7 @@ class FileInfo
     public function getPreview(): ?File\Image
     {
         $fileType = static::guessFileType($this->storage);
-        if ($fileType !== 'image') {
+        if (!$this->hasThumbnail()) {
             return null;
         }
 
