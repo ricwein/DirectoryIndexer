@@ -1,0 +1,46 @@
+a {
+  color: var(--main-accent-color);
+
+  &:hover {
+    color: var(--main-fg-color);
+  }
+}
+
+.container.index {
+  table {
+    a {
+      color: var(--main-fg-color);
+    }
+
+    thead, thead * {
+      z-index: 1;
+      background: var(--main-bg-color);
+      opacity: 1.0;
+    }
+
+    tr.clickableRow {
+
+      &:hover {
+        td {
+          background-color: var(--main-accent-color);
+        }
+      }
+    }
+  }
+}
+
+.is-debug-trace {
+  code {
+    color: var(--main-fg-color);
+  }
+}
+
+.navbar {
+  .navbar-link.logo {
+    color: var(--main-fg-color);
+  }
+}
+
+th[role=columnheader]:not(.no-sort):after {
+  border-color: #D0D0D0 transparent;
+}

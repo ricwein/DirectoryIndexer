@@ -113,8 +113,9 @@ b, strong {
     background-color: darken(mix(#3298dc, $color-dark-background, 0.7), 5%);
   }
 
-  table th {
-    background-color: lighten($color-dark-background, 5%);
+  table thead * {
+    background-color: lighten($color-dark-background, 5%) !important;
+    color: $color-dark-foreground !important;
   }
 }
 

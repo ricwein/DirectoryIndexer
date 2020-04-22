@@ -3,24 +3,10 @@
 @import "dark/error";
 @import "dark/tingle";
 
-.container.index {
-  table {
-    a {
-      color: $color-dark-foreground;
-    }
-  }
-}
-
-.is-debug-trace {
-  code {
-    color: $color-dark-foreground;
-  }
-}
-
-.navbar {
-  .navbar-link.logo {
-    color: $color-dark-foreground;
-  }
+:root {
+  --main-bg-color: #{$color-dark-background};
+  --main-fg-color: #{$color-dark-foreground};
+  --main-accent-color: #{$color-dark-accent};
 }
 
 pre.code-snippet {
@@ -50,10 +36,8 @@ pre.code-snippet {
   }
 }
 
-th[role=columnheader]:not(.no-sort):after {
-  border-color: #D0D0D0 transparent;
-}
-
-table th {
-  background: $color-dark-background;
+tr.clickableRow {
+  &:hover {
+    box-shadow: 0 0.5em 1em -0.125em rgba($color-dark-accent, 0.3), 0 0 0 1px rgba($color-dark-accent, 0.2);
+  }
 }

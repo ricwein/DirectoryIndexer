@@ -1,23 +1,9 @@
 @import "../config/colors";
 
-.container.index {
-  table {
-    a {
-      color: $color-light-foreground;
-    }
-  }
-}
-
-.is-debug-trace {
-  code {
-    color: $color-light-foreground;
-  }
-}
-
-.navbar {
-  .navbar-link.logo {
-    color: $color-light-foreground;
-  }
+:root {
+  --main-bg-color: #{$color-light-background};
+  --main-fg-color: #{$color-light-foreground};
+  --main-accent-color: #{$color-light-accent};
 }
 
 pre.code-snippet {
@@ -47,10 +33,8 @@ pre.code-snippet {
   }
 }
 
-th[role=columnheader]:not(.no-sort):after {
-  border-color: #404040 transparent;
-}
-
-table th {
-  background: $color-light-background;
+tr.clickableRow {
+  &:hover {
+    box-shadow: 0 0.5em 1em -0.125em rgba(lighten($color-light-foreground, 20%), 0.3), 0 0 0 1px rgba(lighten($color-light-foreground, 20%), 0.1);
+  }
 }
