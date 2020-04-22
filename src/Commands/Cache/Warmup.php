@@ -16,10 +16,9 @@ use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Helper\Constraint;
-use ricwein\FileSystem\Helper\Path;
 use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Core\Cache;
-use ricwein\Indexer\Indexer\FileInfo;
+use ricwein\Indexer\Indexer\CachedInfos\FileInfo;
 use ricwein\Indexer\Indexer\Index;
 use RuntimeException;
 use SplFileInfo;
@@ -130,7 +129,7 @@ class Warmup extends Command
                 $path = ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/');
                 $progress->setMessage($path);
             }
-            $fileInfo = new FileInfo($storage, $rootDir->storage()->getConstraints(), $cache);
+            $fileInfo = new FileInfo($storage, $cache, $rootDir->storage()->getConstraints());
             try {
                 $fileInfo->getInfo();
             } catch (ConstraintsException $e) {

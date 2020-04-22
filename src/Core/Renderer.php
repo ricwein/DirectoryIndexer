@@ -9,8 +9,9 @@ use Monolog\Logger;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use ReflectionClass;
 use ricwein\Indexer\Config\Config;
+use ricwein\Indexer\Indexer\CachedInfos\FilePreview;
 use ricwein\Indexer\Indexer\DirectoryList;
-use ricwein\Indexer\Indexer\FileInfo;
+use ricwein\Indexer\Indexer\CachedInfos\FileInfo;
 use ricwein\Indexer\Indexer\PathIgnore;
 use ricwein\Indexer\Indexer\Search;
 use ricwein\Indexer\Network\Http;
@@ -39,7 +40,7 @@ class Renderer
 {
     private Config $config;
     private Http $http;
-    private ?Cache $cache = null;
+    private ?Cache $cache;
     private Logger $logger;
 
     private array $definedBindings = [];
@@ -133,7 +134,10 @@ class Renderer
             $templater->addFunction(new BaseFunction('asset', [$this, 'convertAssetURL']));
             $templater->addFunction(new BaseFunction('render_markdown', [$this, 'convertMarkdown']));
             $templater->addFunction(new BaseFunction('get_file_info', function (Storage $storage): FileInfo {
-                return new FileInfo($storage, $storage->getConstraints(), $this->cache);
+                return new FileInfo($storage, $this->cache, $storage->getConstraints());
+            }));
+            $templater->addFunction(new BaseFunction('get_thumbnail', function (Storage $storage): FilePreview {
+                return new FilePreview($storage, $this->cache);
             }));
             $response = $templater->render($templateFile, $bindings, $filter);
 
@@ -476,7 +480,7 @@ class Renderer
 
 
         if ($storage->isFile()) {
-            $this->displayPathFile(new File($storage));
+            $this->previewFile(new File($storage));
         }
 
         if (!$storage->isDir()) {
@@ -579,7 +583,7 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        $info = (new FileInfo($storage, $rootDir->storage()->getConstraints(), $this->cache))->getInfo();
+        $info = (new FileInfo($storage, $this->cache, $rootDir->storage()->getConstraints()))->getInfo();
 
         Http::sendStatusHeader(200);
         Http::sendHeaders([
@@ -590,19 +594,6 @@ class Renderer
 
         echo json_encode($info, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT, 512);
         exit(0);
-    }
-
-    /**
-     * @param File $file
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws FileNotFoundException
-     * @throws FileSystemRuntimeException
-     * @throws UnexpectedValueException
-     */
-    private function displayPathFile(File $file): void
-    {
-        $this->streamFile($file);
     }
 
     /**
@@ -649,6 +640,24 @@ class Renderer
         $zip->commit();
 
         $this->streamFile($zip, "{$storage->path()->basename}.zip");
+    }
+
+    /**
+     * @param File $file
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws UnexpectedValueException
+     */
+    private function previewFile(File $file): void
+    {
+        Http::sendHeaders([
+            'Content-Type' => $file->getType(true),
+            'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
+        ]);
+
+        $file->stream();
+        exit(0);
     }
 
     /**

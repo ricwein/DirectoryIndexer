@@ -96,7 +96,7 @@
 
                     <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().basename | url_encode }}">
                         <td>
-                            <i class="fas fa-folder"></i>
+                            <i class="{{ get_thumbnail(file.storage()).getIconName() }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().basename }}/'>
@@ -135,7 +135,7 @@
                     <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
                         <td>
                             {# <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
-                            <i class="fas fa-file"></i>
+                            <i class="{{ get_thumbnail(file.storage()).getIconName() }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filename }}'>

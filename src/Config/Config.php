@@ -77,7 +77,6 @@ class Config
         'views' => [
             'path' => '@view',
             'extension' => '.html.twig',
-            'variables' => [],
             'removeComments' => true,
         ],
 

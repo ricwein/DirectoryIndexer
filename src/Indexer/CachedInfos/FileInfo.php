@@ -1,6 +1,6 @@
 <?php
 
-namespace ricwein\Indexer\Indexer;
+namespace ricwein\Indexer\Indexer\CachedInfos;
 
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Enum\Hash;
@@ -18,40 +18,14 @@ use ricwein\Templater\Config;
 use ricwein\Templater\Engine\CoreFunctions;
 use ricwein\Templater\Exceptions\UnexpectedValueException as TemplateUnexpectedValueException;
 
-class FileInfo
+class FileInfo extends BaseInfo
 {
-    private Storage $storage;
     private int $constraints;
-    private ?Cache $cache;
 
-    public function __construct(Storage $storage, int $constraints, ?Cache $cache)
+    public function __construct(Storage $storage, ?Cache $cache, int $constraints)
     {
-        $this->storage = $storage;
-        $this->cache = $cache;
+        parent::__construct($storage, $cache);
         $this->constraints = $constraints;
-    }
-
-    /**
-     * @param Storage $storage
-     * @return string
-     */
-    private static function buildCacheKey(Storage $storage): string
-    {
-        return str_replace(
-            ['{', '}', '(', ')', '/', '\\', '@', ':'],
-            ['|', '|', '|', '|', '.', '.', '-', '_'],
-            sprintf('fileInfoOf_%s|%d',
-                $storage->path()->real,
-                $storage->getTime()
-            )
-        );
-    }
-
-    public function isCached(): bool
-    {
-        $cacheKey = static::buildCacheKey($this->storage);
-        $cacheItem = $this->cache->getItem($cacheKey);
-        return $cacheItem->isHit();
     }
 
     /**
