@@ -67,7 +67,7 @@ class Config
             'enabled' => true,
             'engine' => 'auto', // phpFastCache driver
             'fallback' => 'files',
-            'ttl' => 3600, // default duration: 1h
+            'ttl' => 3600 * 24 * 365, // default duration: 1y
             'prefix' => null,
             'path' => '@cache', // path for filecache
             'memcache' => ['path' => null], // memcache configuration, see phpFastCache

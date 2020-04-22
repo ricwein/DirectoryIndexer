@@ -1,7 +1,11 @@
 <?php
 
-namespace ricwein\Indexer\Indexer\CachedInfos;
+namespace ricwein\Indexer\Indexer;
 
+use Intervention\Image\Constraint as IConstraint;
+use Intervention\Image\Image as IImage;
+use ricwein\FileSystem\Directory;
+use ricwein\FileSystem\Enum\Hash;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\Exception;
@@ -12,11 +16,103 @@ use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\File;
 use ricwein\FileSystem\Helper\Path;
 use ricwein\FileSystem\Storage;
+use ricwein\Indexer\Core\Cache;
+use ricwein\Templater\Config;
+use ricwein\Templater\Engine\CoreFunctions;
+use ricwein\Templater\Exceptions\UnexpectedValueException as TemplateUnexpectedValueException;
 
-class FilePreview extends BaseInfo
+class FileInfo
 {
     private const THUMBNAIL_WIDTH = 32;
     private const THUMBNAIL_HEIGHT = 32;
+    private const CACHE_DURATION = 365 * 24 * 60 * 60;
+
+    private Storage $storage;
+    private ?Cache $cache;
+    private int $constraints;
+
+    public function __construct(Storage $storage, ?Cache $cache, int $constraints)
+    {
+        $this->storage = $storage;
+        $this->cache = $cache;
+        $this->constraints = $constraints;
+    }
+
+    public function isCached(): bool
+    {
+        $cacheKey = static::buildCacheKey('indexOf', $this->storage);
+        $cacheItem = $this->cache->getItem($cacheKey);
+        return $cacheItem->isHit();
+    }
+
+    /**
+     * @return array
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws FileNotFoundException
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     * @throws TemplateUnexpectedValueException
+     */
+    public function getInfo(): array
+    {
+        if ($this->cache === null) {
+            return $this->fetchInfo();
+        }
+
+        $cacheKey = static::buildCacheKey('indexOf', $this->storage);
+        $cacheItem = $this->cache->getItem($cacheKey);
+
+        if ($cacheItem->isHit()) {
+            return $cacheItem->get();
+        }
+
+        $info = $this->fetchInfo();
+        $cacheItem->set($info);
+        $cacheItem->expiresAfter(static::CACHE_DURATION);
+        $this->cache->save($cacheItem);
+
+        return $info;
+    }
+
+    /**
+     * @param string $prefix
+     * @param Storage $storage
+     * @return string
+     */
+    protected static function buildCacheKey(string $prefix, Storage $storage): string
+    {
+        return str_replace(
+            ['{', '}', '(', ')', '/', '\\', '@', ':'],
+            ['|', '|', '|', '|', '.', '.', '-', '_'],
+            sprintf('%s_%s|%d',
+                rtrim($prefix, '_'),
+                $storage->path()->real,
+                $storage->getTime()
+            )
+        );
+    }
+
+    public function hasThumbnail(): bool
+    {
+        if (!$this->storage instanceof Storage\Disk) {
+            return false;
+        }
+
+        $extension = strtolower($this->storage->path()->extension);
+
+        return in_array($extension, [
+            'png', 'gif', 'bmp', 'jpg', 'jpeg'
+        ], true);
+    }
+
+    public function getType(): string
+    {
+        return static::guessFileType($this->storage);
+    }
+
 
     /**
      * @return File\Image|null
@@ -35,7 +131,11 @@ class FilePreview extends BaseInfo
             return $this->buildThumbnail();
         }
 
-        $cacheKey = static::buildCacheKey($this->storage);
+        $cacheKey = sprintf('%s|%dx%d',
+            static::buildCacheKey('thumbnailOf', $this->storage),
+            static::THUMBNAIL_WIDTH,
+            static::THUMBNAIL_HEIGHT
+        );
         $cacheItem = $this->cache->getItem($cacheKey);
 
         if ($cacheItem->isHit()) {
@@ -44,15 +144,55 @@ class FilePreview extends BaseInfo
 
         $thumbnail = $this->buildThumbnail();
         $cacheItem->set($thumbnail->read());
-        $cacheItem->expiresAfter(365 * 24 * 60 * 60);
+        $cacheItem->expiresAfter(static::CACHE_DURATION);
         $this->cache->save($cacheItem);
 
         return $thumbnail;
     }
 
-    protected static function buildCacheKey(Storage $storage): string
+    /**
+     * @return array
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws FileNotFoundException
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     * @throws TemplateUnexpectedValueException
+     */
+    private function fetchInfo(): array
     {
-        return sprintf('%s|%dx%d', parent::buildCacheKey($storage), static::THUMBNAIL_WIDTH, static::THUMBNAIL_HEIGHT);
+        if ($this->storage->isDir()) {
+            $dir = new Directory($this->storage, $this->constraints);
+            $size = $dir->getSize();
+
+            return [
+                'type' => 'dir',
+                'filename' => $dir->path()->basename,
+                'size' => [
+                    'bytes' => $size,
+                    'hr' => (new CoreFunctions(new Config([])))->formatBytes($size, 1),
+                ],
+            ];
+        }
+
+        $file = new File($this->storage, $this->constraints);
+        $size = $file->getSize();
+
+        return [
+            'type' => 'file',
+            'filename' => $file->path()->filename,
+            'size' => [
+                'bytes' => $size,
+                'hr' => (new CoreFunctions(new Config([])))->formatBytes($size, 1),
+            ],
+            'hash' => [
+                'md5' => $file->getHash(Hash::CONTENT, 'md5'),
+                'sha1' => $file->getHash(Hash::CONTENT, 'sha1'),
+                'sha256' => $file->getHash(Hash::CONTENT, 'sha256'),
+            ],
+        ];
     }
 
     /**
@@ -67,9 +207,13 @@ class FilePreview extends BaseInfo
      */
     private function buildThumbnail(): File\Image
     {
-        $image = new File\Image(new Storage\Memory($this->storage->readFile()));
-        $image->resizeToFit(static::THUMBNAIL_WIDTH, static::THUMBNAIL_HEIGHT, false);
-        return $image;
+        $file = new File\Image(new Storage\Memory($this->storage->readFile()));
+        $file->edit(static function (IImage $image): IImage {
+            return $image->fit(static::THUMBNAIL_WIDTH, static::THUMBNAIL_HEIGHT, static function (IConstraint $constraint) {
+                $constraint->upsize();
+            });
+        });
+        return $file;
     }
 
     /**
@@ -84,7 +228,7 @@ class FilePreview extends BaseInfo
         }
 
         if ($this->storage instanceof Storage\Disk) {
-            if ($this->storage->path()->real === (new Path([__DIR__, '/../../../']))->real) {
+            if ($this->storage->path()->real === (new Path([__DIR__, '/../../']))->real) {
                 return 'fas fa-crown';
             }
 
@@ -153,6 +297,7 @@ class FilePreview extends BaseInfo
         return $fileType;
     }
 
+
     private static function guessFileType(Storage $storage): string
     {
         if (!$storage instanceof Storage\Disk) {
@@ -168,6 +313,8 @@ class FilePreview extends BaseInfo
             case 'tiff':
             case 'bmp':
             case 'gif':
+            case 'ico':
+            case 'svg':
                 return 'image';
 
             case 'mpeg':
@@ -208,6 +355,8 @@ class FilePreview extends BaseInfo
                 return 'pdf';
 
             case 'php':
+            case 'js':
+            case 'map':
             case 'c':
             case 'cpp':
             case 'h':
@@ -220,7 +369,7 @@ class FilePreview extends BaseInfo
             case 'css':
             case 'scss':
             case 'sass':
-                return 'cods';
+                return 'code';
 
             case 'zip':
             case 'rar':

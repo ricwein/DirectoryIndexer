@@ -94,6 +94,8 @@ class Router
             $routes->addRoute('GET', '/{path:.*}', function (string $path) {
                 if ($this->http->getQueryParameter('info') !== null) {
                     $this->renderer->displayPathInfo($path);
+                } elseif ($this->http->getQueryParameter('thumbnail') !== null) {
+                    $this->renderer->displayThumbnail($path);
                 } elseif ($this->http->getQueryParameter('download') !== null) {
                     $this->renderer->downloadDirectoryZip($path);
                 } else {

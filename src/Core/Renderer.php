@@ -8,10 +8,10 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use ReflectionClass;
+use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\Indexer\Config\Config;
-use ricwein\Indexer\Indexer\CachedInfos\FilePreview;
 use ricwein\Indexer\Indexer\DirectoryList;
-use ricwein\Indexer\Indexer\CachedInfos\FileInfo;
+use ricwein\Indexer\Indexer\FileInfo;
 use ricwein\Indexer\Indexer\PathIgnore;
 use ricwein\Indexer\Indexer\Search;
 use ricwein\Indexer\Network\Http;
@@ -135,9 +135,6 @@ class Renderer
             $templater->addFunction(new BaseFunction('render_markdown', [$this, 'convertMarkdown']));
             $templater->addFunction(new BaseFunction('get_file_info', function (Storage $storage): FileInfo {
                 return new FileInfo($storage, $this->cache, $storage->getConstraints());
-            }));
-            $templater->addFunction(new BaseFunction('get_thumbnail', function (Storage $storage): FilePreview {
-                return new FilePreview($storage, $this->cache);
             }));
             $response = $templater->render($templateFile, $bindings, $filter);
 
@@ -604,6 +601,38 @@ class Renderer
      * @throws FileSystemException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     */
+    public function displayThumbnail(string $path): void
+    {
+        $rootDir = $this->getRootDir();
+        $storage = new Storage\Disk($rootDir, $path);
+        $pathIgnore = new PathIgnore($rootDir, $this->config);
+
+        if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
+            throw new FileNotFoundException("File not found: {$path}", 404);
+        }
+
+        if (strpos($storage->path()->real, $rootDir->path()->real) !== 0) {
+            throw new RuntimeException('Access denied.', 403);
+        }
+
+        $fileInfo = new FileInfo($storage, $this->cache, $rootDir->storage()->getConstraints());
+        if (null === $thumbnail = $fileInfo->getPreview()) {
+            throw new RuntimeException('Unable to generate Thumbnail.', 400);
+        }
+
+        $this->previewFile($thumbnail);
+    }
+
+    /**
+     * @param string $path
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws FileSystemException
+     * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
      */
     public function downloadDirectoryZip(string $path): void
     {
@@ -651,10 +680,17 @@ class Renderer
      */
     private function previewFile(File $file): void
     {
-        Http::sendHeaders([
+        $headers = [
             'Content-Type' => $file->getType(true),
             'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
-        ]);
+        ];
+
+        if ($this->config->cache['enabled']) {
+            $headers['Cache-Control'] = "max-age={$this->config->cache['ttl']}";
+        }
+
+        Http::sendHeaders($headers);
+
 
         $file->stream();
         exit(0);

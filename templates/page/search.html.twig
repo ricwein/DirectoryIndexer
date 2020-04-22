@@ -10,9 +10,9 @@
 {% endblock %}
 
 {% block site_title %}
-    <div class="title is-5 navbar-link is-arrowless logo">
-        <a class="navbar-link is-arrowless" href="{{ url.base }}">Search Results for: &nbsp; <strong><small>{{ subject }}</small></strong></a>
-    </div>
+    <h1 class="title is-5 navbar-link is-arrowless logo">
+        <a class="navbar-link is-arrowless" aria-label="Pagetitle" href="{{ url.base }}">Search Results for: &nbsp; <strong><small>{{ subject }}</small></strong></a>
+    </h1>
 {% endblock %}
 
 {% block title %}Search: {{ subject }}{% endblock %}
@@ -46,11 +46,13 @@
             <tbody>
 
             {% for file in searcher.search(subject) %}
+                {% set fileInfo = get_file_info(file.storage()) %}
+
                 {% if file.isDir() %}
 
                     <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
-                            <i class="fas fa-folder"></i>
+                            <i class="thumbnail {{ fileInfo.getIconName() }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}/'>
@@ -67,7 +69,6 @@
                             {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
-                        {% set fileInfo = get_file_info(file.storage()) %}
                         {% if fileInfo.isCached() %}
                             {% set info = fileInfo.getInfo() %}
                             <td data-sort-column-key="size" data-sort='{{ info.size.bytes }}'>
@@ -80,7 +81,7 @@
                         {% endif %}
 
                         <td>
-                            <a class="button is-link is-light view-modal-info" href="{{ url.base }}/{{ file.path().filepath | url_encode }}?info"><i class="fas fa-eye"></i></a>
+                            <a class="button is-link is-light view-modal-info" aria-label="View Info" href="{{ url.base }}/{{ file.path().filepath | url_encode }}?info"><i class="fas fa-eye"></i></a>
                         </td>
                     </tr>
 
@@ -88,8 +89,11 @@
 
                     <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
-                            {# <img src="https://files.ricwein.com/preview_configurator_launchpage.png" width="50px" height="20px" alt="" />#}
-                            <i class="fas fa-file"></i>
+                            {% if fileInfo.hasThumbnail() %}
+                                <img class="thumbnail" loading="lazy" src="{{ url.base }}/{{ file.path().filepath | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
+                            {% else %}
+                                <i class="thumbnail {{ fileInfo.getIconName() }}"></i>
+                            {% endif %}
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}'>
@@ -111,7 +115,7 @@
                         </td>
 
                         <td>
-                            <a class="button is-link is-light view-modal-info" href="{{ url.base }}/{{ file.path().filepath | url_encode }}?info"><i class="fas fa-eye"></i></a>
+                            <a class="button is-link is-light view-modal-info" aria-label="View Info" href="{{ url.base }}/{{ file.path().filepath | url_encode }}?info"><i class="fas fa-eye"></i></a>
                         </td>
                     </tr>
 
