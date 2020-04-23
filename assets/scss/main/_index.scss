@@ -48,6 +48,18 @@ tr.clickableRow {
   td {
     border-left: 0.1rem solid transparent;
     border-right: 0.1rem solid transparent;
+
+    progress {
+      width: 100%;
+      border-radius: 0 !important;
+      border: 0;
+      border-right: 0.1rem solid transparent;
+      border-left: 0.1rem solid transparent;
+
+      &.is-accent {
+        border-left-color: var(--main-accent-color);
+      }
+    }
   }
 
   td:first-of-type {
@@ -68,6 +80,28 @@ tr.clickableRow {
 
     td {
       color: var(--main-bg-color);
+
+      progress.is-accent {
+        border-color: var(--main-bg-color);
+        color: var(--main-bg-color);
+        background-color: var(--main-accent-color);
+
+        &::-webkit-progress-bar {
+          background-color: var(--main-accent-color);
+        }
+
+        &::-webkit-progress-value {
+          background-color: var(--main-bg-color);
+        }
+
+        &::-moz-progress-bar {
+          background-color: var(--main-bg-color);
+        }
+
+        &::-ms-fill {
+          background-color: var(--main-bg-color);
+        }
+      }
 
       a {
         color: var(--main-bg-color);

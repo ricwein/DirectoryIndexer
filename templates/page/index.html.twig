@@ -91,6 +91,8 @@
                 </tr>
             {% endif %}
 
+            {% set dirInfo = get_file_info(index.dir().storage()) %}
+
             {% for file in index.list() %}
                 {% set fileInfo = get_file_info(file.storage()) %}
 
@@ -119,6 +121,10 @@
                             {% set info = fileInfo.getInfo() %}
                             <td data-sort-column-key="size" data-sort='{{ info.size.bytes }}'>
                                 {{ info.size.bytes | format_bytes(1) }}
+
+                                {% if dirInfo.isCached() %}
+                                    <progress class="progress is-accent is-small" value="{{ info.size.bytes }}" max="{{ dirInfo.getInfo().size.bytes }}">15%</progress>
+                                {% endif %}
                             </td>
                         {% else %}
                             <td data-sort-column-key="size" data-sort='999999999999999'>
@@ -157,7 +163,12 @@
                         </td>
 
                         <td data-sort-column-key="size" data-sort='{{ file.getSize() }}'>
-                            {{ file.getSize() | format_bytes(1) }}
+                            {% set fileSize = file.getSize() %}
+                            {{ fileSize | format_bytes(1) }}
+
+                            {% if dirInfo.isCached() %}
+                                <progress class="progress is-accent is-small" value="{{ fileSize }}" max="{{ dirInfo.getInfo().size.bytes }}">15%</progress>
+                            {% endif %}
                         </td>
 
                         <td>

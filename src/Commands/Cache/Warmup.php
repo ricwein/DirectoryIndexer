@@ -22,6 +22,7 @@ use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Core\Cache;
 use ricwein\Indexer\Indexer\FileInfo;
 use ricwein\Indexer\Indexer\Index;
+use ricwein\Templater\Exceptions\UnexpectedValueException as TemplateUnexpectedValueException;
 use RuntimeException;
 use SplFileInfo;
 use Symfony\Component\Console\Command\Command;
@@ -46,6 +47,7 @@ class Warmup extends Command
      * @param OutputInterface $output
      * @return int
      * @throws AccessDeniedException
+     * @throws FileSystemException
      * @throws FileSystemRuntimeException
      * @throws PhpfastcacheDriverCheckException
      * @throws PhpfastcacheDriverException
@@ -54,8 +56,8 @@ class Warmup extends Command
      * @throws PhpfastcacheInvalidConfigurationException
      * @throws ReflectionException
      * @throws UnexpectedValueException
-     * @throws Exception
      * @throws UnsupportedException
+     * @throws TemplateUnexpectedValueException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

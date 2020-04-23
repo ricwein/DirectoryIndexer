@@ -40,7 +40,7 @@ class FileInfo
 
     public function isCached(): bool
     {
-        $cacheKey = static::buildCacheKey('indexOf', $this->storage);
+        $cacheKey = static::buildCacheKey('infoOf', $this->storage);
         $cacheItem = $this->cache->getItem($cacheKey);
         return $cacheItem->isHit();
     }
@@ -62,7 +62,7 @@ class FileInfo
             return $this->fetchInfo();
         }
 
-        $cacheKey = static::buildCacheKey('indexOf', $this->storage);
+        $cacheKey = static::buildCacheKey('infoOf', $this->storage);
         $cacheItem = $this->cache->getItem($cacheKey);
 
         if ($cacheItem->isHit()) {

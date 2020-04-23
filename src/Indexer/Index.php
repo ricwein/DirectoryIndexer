@@ -8,7 +8,6 @@ use ricwein\FileSystem\Exceptions\Exception;
 use ricwein\FileSystem\Exceptions\RuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
-use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Core\Cache;
 

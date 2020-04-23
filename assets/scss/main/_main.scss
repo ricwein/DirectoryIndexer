@@ -5,3 +5,33 @@ a {
     color: var(--main-fg-color);
   }
 }
+
+.is-accent {
+  background-color: var(--main-accent-color);
+  color: var(--main-bg-color);
+}
+
+progress.is-accent {
+  color: var(--main-accent-color);
+  background-color: var(--main-bg-color);
+
+  &::-webkit-progress-bar {
+    background-color: var(--main-bg-color);
+  }
+
+  &::-webkit-progress-value {
+    background-color: var(--main-accent-color);
+  }
+
+  &::-moz-progress-bar {
+    background-color: var(--main-accent-color);
+  }
+
+  &::-ms-fill {
+    background-color: var(--main-accent-color);
+  }
+
+  &:indeterminate {
+    background-image: linear-gradient(to right, var(--main-accent-color) 30%, var(--main-bg-color) 30%);
+  }
+}
