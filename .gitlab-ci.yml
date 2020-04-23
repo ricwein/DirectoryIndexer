@@ -1,0 +1,27 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - build
+  - deploy
+
+#jobs:
+Build:
+  stage: build
+  tags:
+    - docker
+    - docker-compose
+  script:
+    - docker-compose -f docker-compose.base.yml build --pull --parallel --force-rm --no-cache
+
+Deploy:
+  stage: deploy
+  environment:
+    name: production
+  tags:
+    - deploy
+    - docker
+    - docker-compose
+  script:
+    - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE down
+    - docker-compose -f docker-compose.base.yml -f docker-compose.gitlab-ci.yml -f $CONFIG_DOCKER_COMPOSE up -d --remove-orphans

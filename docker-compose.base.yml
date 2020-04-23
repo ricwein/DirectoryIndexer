@@ -1,0 +1,32 @@
+version: '3.4'
+services:
+  nginx:
+    build:
+      context: ./
+      dockerfile: ./docker/nginx.Dockerfile
+    networks:
+      - irescue
+    environment:
+      - NGINX_GENERATE_DEFAULT_VHOST=false
+    restart: unless-stopped
+
+  php-fpm:
+    build:
+      context: ./
+      dockerfile: ./docker/php-fpm.Dockerfile
+    networks:
+      - irescue
+    environment:
+      - INDEX_DOCKER=true
+      - INDEX_IMPORTS=config.docker.json
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    networks:
+      - irescue
+    restart: unless-stopped
+
+networks:
+  irescue: null
+
