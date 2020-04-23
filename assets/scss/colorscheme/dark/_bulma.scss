@@ -60,7 +60,6 @@ b, strong {
 }
 
 .navbar, .navbar-menu.is-active {
-  background-color: lighten($color-dark-background, 4%);
   border-bottom: none;
 }
 
@@ -69,14 +68,6 @@ b, strong {
 
   &:hover {
     color: darken($color-dark-foreground, 30%);
-  }
-}
-
-.navbar-item, .navbar-link {
-  color: $color-dark-foreground;
-
-  &:hover {
-    background-color: lighten($color-dark-background, 4%);
   }
 }
 
@@ -127,11 +118,6 @@ b, strong {
   &.is-warning {
     background-color: darken(mix(#ffdd57, $color-dark-background), 32%);
   }
-}
-
-pre {
-  background-color: $color-dark-background;
-  color: $color-dark-foreground;
 }
 
 .input, .textarea, .select select {

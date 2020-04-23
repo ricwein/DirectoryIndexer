@@ -1,0 +1,7 @@
+a {
+  color: var(--main-accent-color);
+
+  &:hover {
+    color: var(--main-fg-color);
+  }
+}

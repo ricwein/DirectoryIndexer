@@ -1,5 +1,6 @@
 .navbar, .navbar-menu.is-active {
   box-shadow: 0 4px 6px 0 rgba(12, 0, 46, 0.06);
+  background-color: var(--main-navbar-color);
 }
 
 .navbar {
@@ -11,9 +12,18 @@
   .navbar-link.logo {
     border-radius: 0.5rem;
     font-weight: bold;
+    color: var(--main-fg-color);
 
     .path.breadcrumb li a {
       padding: 0;
     }
+  }
+}
+
+.navbar-item, .navbar-link {
+  color: var(--main-fg-color);
+
+  &:hover {
+    background-color: var(--main-navbar-color);
   }
 }

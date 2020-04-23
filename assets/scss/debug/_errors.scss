@@ -3,6 +3,7 @@
     padding: 0;
     background-color: transparent;
     font-family: monospace;
+    color: var(--main-fg-color);
   }
 
   pre.code-snippet {
@@ -21,4 +22,9 @@
       }
     }
   }
+}
+
+pre {
+  background-color: var(--main-bg-color);
+  color: var(--main-fg-color);
 }

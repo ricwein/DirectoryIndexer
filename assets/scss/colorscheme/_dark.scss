@@ -7,6 +7,7 @@
   --main-bg-color: #{$color-dark-background};
   --main-fg-color: #{$color-dark-foreground};
   --main-accent-color: #{$color-dark-accent};
+  --main-navbar-color: #{$color-dark-navbar};
 }
 
 pre.code-snippet {
@@ -38,7 +39,7 @@ pre.code-snippet {
 
 tr.clickableRow {
   &:hover {
-    box-shadow: 0 0.5em 1em -0.125em rgba($color-dark-accent, 0.3), 0 0 0 1px rgba($color-dark-accent, 0.2);
+    box-shadow: 0 0.5em 1em -0.125em rgba(darken($color-dark-background, 0.85), 0.3), 0 0 0 1px rgba(darken($color-dark-background, 0.9), 0.2);
   }
 }
 

@@ -2,6 +2,8 @@ th[role=columnheader]:not(.no-sort) {
   cursor: pointer;
 
   &:after {
+    border-color: var(--main-fg-color) transparent;
+
     content: '';
     float: right;
     margin-top: 7px;
@@ -29,5 +31,5 @@ th[aria-sort=ascending]:not(.no-sort):after {
 
 th[aria-sort]:not(.no-sort):after {
   visibility: visible;
-  opacity: 0.4;
+  opacity: 0.2;
 }

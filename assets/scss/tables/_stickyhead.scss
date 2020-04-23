@@ -3,6 +3,11 @@ table {
   th {
     position: -webkit-sticky;
     position: sticky;
-    top: 78px;
+
+    // table headers should stick BELOW the main navbar
+    top: 52px;
+    @media screen and (min-width: 1024px) {
+      top: 78px;
+    }
   }
 }
