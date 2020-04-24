@@ -122,7 +122,6 @@ class FileInfo
      */
     public function getPreview(): ?File\Image
     {
-        $fileType = static::guessFileType($this->storage);
         if (!$this->hasThumbnail()) {
             return null;
         }
@@ -227,159 +226,94 @@ class FileInfo
             return 'fas fa-external-link-alt';
         }
 
-        if ($this->storage instanceof Storage\Disk) {
-            if ($this->storage->path()->real === (new Path([__DIR__, '/../../']))->real) {
-                return 'fas fa-crown';
-            }
-
-            $filename = strtolower($this->storage->path()->filename);
-            switch ($filename) {
-                case '.git':
-                    return 'fas fa-code-branch';
-
-                case '.gitlab-ci.yml':
-                    return 'fab fa-gitlab';
-
-                case 'dockerfile':
-                case 'docker-compose.yml':
-                case 'docker-compose.yaml':
-                    return 'fab fa-docker';
-            }
-
-            if ($this->storage->isDir()) {
-                $extension = strtolower(pathinfo($this->storage->path()->real, PATHINFO_EXTENSION));
-                switch ($extension) {
-                    case 'xcworkspace':
-                    case 'xcodeproj':
-                        return 'fab fa-apple';
-                }
-                return 'fas fa-folder';
-            }
-
+        if (!$this->storage instanceof Storage\Disk) {
+            return $this->storage->isDir() ? 'fas fa-folder' : 'far fa-file';
         }
 
-        $fileType = static::guessFileType($this->storage);
-        switch ($fileType) {
-            case 'image':
-                return 'far fa-file-image';
+        if ($this->storage->path()->real === (new Path([__DIR__, '/../../']))->real) {
+            return 'fas fa-crown';
+        }
 
-            case 'video':
-                return 'far fa-file-video';
+        $filename = strtolower($this->storage->isDir() ? $this->storage->path()->basename : $this->storage->path()->filename);
+        $extension = strtolower(pathinfo($this->storage->path()->real, PATHINFO_EXTENSION));
 
-            case 'audio':
-                return 'far fa-file-audio';
+        switch (true) {
+            // known files (full names)
+            case in_array($filename, ['.gitignore', '.dockerignore', '.indexignore'], true):
+                return 'far fa-eye-slash';
 
-            case 'word':
-                return 'far fa-file-word';
+            case strpos($filename, '.gitlab') === 0:
+                return 'fab fa-gitlab';
 
-            case 'text':
-                return 'far fa-file-alt';
+            case strpos($filename, '.github') === 0:
+                return 'fab fa-github';
 
-            case 'powerpoint':
-                return 'far fa-file-powerpoint';
+            case strpos($filename, '.git') === 0:
+                return $this->storage->isDir() ? 'fab fa-git-square' : 'fab fa-git';
 
-            case 'excel':
-                return 'far fa-file-excel';
+            case $filename === '.editorconfig':
+                return 'fas fa-cog';
 
-            case 'pdf':
+            case in_array($filename, ['license', 'license.txt', 'license.md'], true):
+                return 'far fa-id-badge';
+
+            case $extension === 'pdf':
                 return 'far fa-file-pdf';
 
-            case 'code':
+            case in_array($filename, ['dockerfile', 'docker-compose.yml'], true):
+            case $extension === 'dockerfile':
+            case strpos($filename, 'docker-compose.') === 0:
+                return 'fab fa-docker';
+
+            case in_array($filename, ['composer.json', 'composer.lock', 'podfile', 'podfile.lock',], true):
+            case strpos($filename, 'package.') === 0:
+            case $extension === 'gradle':
+                return 'fas fa-cube';
+
+            case in_array($filename, ['node_modules', 'vendor'], true):
+                return 'fas fa-cubes';
+
+            // extensions
+            case in_array($extension, ['ini', 'conf', 'plist'], true) :
+                return 'fas fa-cogs';
+
+            case in_array($extension, ['xcworkspace', 'xcodeproj'], true):
+                return 'fab fa-app-store-ios';
+
+            case in_array($extension, ['png', 'jpg', 'jpeg', 'tiff', 'bmp', 'gif', 'ico', 'svg'], true):
+                return 'far fa-file-image';
+
+            case in_array($extension, ['mpeg', 'mp4', 'mov', 'mkv'], true):
+                return 'far fa-file-video';
+
+            case in_array($extension, ['mp3', 'acc', 'wav'], true):
+                return 'far fa-file-audio';
+
+            case in_array($extension, ['txt', 'rtf', 'md'], true):
+                return 'far fa-file-alt';
+
+            case in_array($extension, ['doc', 'docx'], true):
+                return 'far fa-file-word';
+
+            case in_array($extension, ['xls', 'xlsx'], true):
+                return 'far fa-file-excel';
+
+            case in_array($extension, ['pptm', 'potm', 'ppsm', 'pps', 'ppsx', 'odp', 'ppt', 'pptx', 'pot', 'potx'], true):
+                return 'far fa-file-powerpoint';
+
+            case in_array($extension, ['sql', 'sqlite'], true):
+                return 'fas fa-database';
+
+            case in_array($extension, ['blade', 'twig'], true):
+                return 'fas fa-leaf';
+
+            case in_array($extension, ['php', 'sh', 'zsh', 'js', 'map', 'm', 'c', 'cpp', 'h', 'hpp', 'swift', 'java', 'rb', 'py', 'html', 'htm', 'xml', 'css', 'scss', 'sass', 'json', 'yml', 'yaml'], true):
                 return 'far fa-file-code';
 
-            case 'archive':
+            case in_array($extension, ['zip', 'rar', 'xip', '7z', 'tar', 'gz'], true):
                 return 'far fa-file-archive';
-
-            case 'unknown':
-                return 'far fa-file';
         }
 
-        return $fileType;
-    }
-
-
-    private static function guessFileType(Storage $storage): string
-    {
-        if (!$storage instanceof Storage\Disk) {
-            return 'unknown';
-        }
-
-        $extension = strtolower($storage->path()->extension);
-
-        switch ($extension) {
-            case 'png':
-            case 'jpg':
-            case 'jpeg':
-            case 'tiff':
-            case 'bmp':
-            case 'gif':
-            case 'ico':
-            case 'svg':
-                return 'image';
-
-            case 'mpeg':
-            case 'mp4':
-            case 'mov':
-                return 'video';
-
-            case 'mp3':
-                return 'audio';
-
-            case 'txt':
-            case 'rtf':
-            case 'md':
-                return 'text';
-
-            case 'doc':
-            case 'docx':
-            case 'md':
-                return 'word';
-
-            case 'xls':
-            case 'xlsx':
-                return 'excel';
-
-            case 'pptm':
-            case 'potm':
-            case 'ppsm':
-            case 'pps':
-            case 'ppsx':
-            case 'odp':
-            case 'ppt':
-            case 'pptx':
-            case 'pot':
-            case 'potx':
-                return 'powerpoint';
-
-            case 'pdf':
-                return 'pdf';
-
-            case 'php':
-            case 'js':
-            case 'map':
-            case 'c':
-            case 'cpp':
-            case 'h':
-            case 'hpp':
-            case 'java':
-            case 'rb':
-            case 'py':
-            case 'html':
-            case 'htm':
-            case 'css':
-            case 'scss':
-            case 'sass':
-                return 'code';
-
-            case 'zip':
-            case 'rar':
-            case 'xip':
-            case '7z':
-            case 'tar':
-            case 'gz':
-                return 'archive';
-        }
-
-        return 'unknown';
+        return $this->storage->isDir() ? 'fas fa-folder' : 'far fa-file';
     }
 }

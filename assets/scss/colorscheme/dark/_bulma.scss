@@ -88,7 +88,7 @@ b, strong {
 .box {
   color: darken($color-dark-foreground, 15%);
   background-color: darken($color-dark-background, 2%);
-  box-shadow: 0 0.5em 1em -0.125em rgba(lighten($color-dark-background, 20%), 0.1), 0 0 0 1px rgba(lighten($color-dark-background, 20%), 0.02);
+  box-shadow: 0 0.5em 1em -0.125em rgba(darken($color-dark-background, 0.85), 0.3), 0 0 0 1px rgba(darken($color-dark-background, 0.9), 0.2);
 
   table th {
     background-color: darken($color-dark-background, 2%);
@@ -98,11 +98,7 @@ b, strong {
 .panel {
   color: darken($color-dark-foreground, 15%);
   background-color: lighten($color-dark-background, 5%);
-  box-shadow: 0 0.5em 1em -0.125em rgba(lighten($color-dark-background, 50%), 0.1), 0 0 0 1px rgba(lighten($color-dark-background, 50%), 0.02);
-
-  &.is-info .panel-heading {
-    background-color: darken(mix(#3298dc, $color-dark-background, 0.7), 5%);
-  }
+  box-shadow: 0 0.5em 1em -0.125em rgba(darken($color-dark-background, 0.85), 0.3), 0 0 0 1px rgba(darken($color-dark-background, 0.9), 0.2);
 
   table thead * {
     background-color: lighten($color-dark-background, 5%) !important;
@@ -172,6 +168,10 @@ b, strong {
     }
   }
 
+}
+
+code {
+  background-color: lighten($color-dark-background, 3%);
 }
 
 .breadcrumb li.is-active a {

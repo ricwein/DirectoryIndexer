@@ -6,9 +6,20 @@ a {
   }
 }
 
-.is-accent {
+.button.is-accent {
   background-color: var(--main-accent-color);
   color: var(--main-bg-color);
+}
+
+.panel {
+  &.is-accent .panel-heading {
+    background-color: var(--main-accent-color);
+    color: var(--main-bg-color);
+  }
+}
+
+code {
+  border-radius: 0.3rem;
 }
 
 progress.is-accent {
