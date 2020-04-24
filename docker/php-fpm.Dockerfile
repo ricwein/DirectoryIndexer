@@ -8,6 +8,9 @@ ARG timezone
 # set default timezone
 RUN echo 'date.timezone = ${timezone:-Europe/Berlin}' > /usr/local/etc/php/conf.d/55-date.ini
 
+# fixes www-data user uid/gid to fix later volume bindings permissions
+RUN sed -ri 's/^www-data:x:82:82:/www-data:x:1000:50:/' /etc/passwd
+
 # load our custom php.ini config
 COPY docker/config/php.ini /usr/local/etc/php/
 
