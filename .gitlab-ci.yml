@@ -4,6 +4,7 @@ variables:
 stages:
   - build
   - deploy
+  - prepare
 
 #jobs:
 Build:
@@ -25,3 +26,14 @@ Deploy:
   script:
     - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE down
     - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE up -d --remove-orphans
+
+Warmup Cache:
+  stage: prepare
+  environment:
+    name: production
+  tags:
+    - deploy
+    - docker
+    - docker-compose
+  script:
+    - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE exec php-fpm sh -c "./bin/console cache:warmup --force-index"

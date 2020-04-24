@@ -211,6 +211,10 @@ class Config
                 case 'INDEX_DEFAULT_IGNORE':
                     $this->config['defaultIndexIgnore'] = json_decode((string)$value, true, 512, JSON_THROW_ON_ERROR);
                     break;
+
+                case 'INDEX_CACHE_CONFIG':
+                    $this->config['cache'] = array_replace_recursive($this->config['cache'], json_decode((string)$value, true, 512, JSON_THROW_ON_ERROR));
+                    break;
             }
         }
     }
