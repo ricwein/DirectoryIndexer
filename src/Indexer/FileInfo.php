@@ -210,7 +210,7 @@ class FileInfo
         $file->edit(static function (IImage $image): IImage {
             return $image->fit(static::THUMBNAIL_WIDTH, static::THUMBNAIL_HEIGHT, static function (IConstraint $constraint) {
                 $constraint->upsize();
-            })->encode('jpg', 90);
+            });
         });
         return $file;
     }
