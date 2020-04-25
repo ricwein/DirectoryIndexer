@@ -12,7 +12,6 @@ use ReflectionException;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
-use ricwein\FileSystem\Exceptions\Exception;
 use ricwein\FileSystem\Exceptions\Exception as FileSystemException;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
@@ -39,7 +38,8 @@ class Warmup extends Command
         $this
             ->setDescription('Directory Index Cache WarmUp.')
             ->setHelp('This command indexes the whole Directory recursively. This might take a while.')
-            ->addOption('force-index', null, InputOption::VALUE_NONE, 'Force-index Directory by flushing the cache first.');
+            ->addOption('force-index', null, InputOption::VALUE_NONE, 'Force-index Directory by flushing the cache first.')
+            ->addOption('CI', null, InputOption::VALUE_NONE, 'Optimizes Outputs for CI logs.');
     }
 
     /**
@@ -86,38 +86,71 @@ class Warmup extends Command
         if (!$rootDir->isDir() || !$rootDir->isReadable()) {
             throw new RuntimeException("Unable to read root directory: {$rootDir->path()->raw}", 500);
         }
+
         $timeStart = time();
         $lastTime = $timeStart;
+        $outputIsCI = (bool)$input->getOption('CI');
 
         // STEP 1: clean cache
         if ($input->getOption('force-index')) {
-            $output->writeln($formatter->formatSection('Setup', 'cleanup cache...'));
+            if (!$outputIsCI) {
+                $output->writeln($formatter->formatSection('Setup', 'cleanup cache...'));
+            } else {
+                $output->write($formatter->formatSection('Setup', 'cleanup cache...'));
+            }
             $cache->clear();
-            $output->writeln(sprintf(' - <info>done</info> (%ds)', time() - $lastTime));
+            if (!$outputIsCI) {
+                $output->writeln(sprintf(' - <info>done</info> (%ds)', time() - $lastTime));
+            } else {
+                $output->writeln(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+            }
         }
         $lastTime = time();
 
         // STEP 2: index directories and files
-        $output->writeln($formatter->formatSection('Indexing', 'traverse directory...'));
         $progress = new ProgressIndicator($output);
-        $progress->start('indexing: /');
+        $message = $formatter->formatSection('Indexing', 'traverse directory...');
+        if (!$outputIsCI) {
+            $output->writeln($message);
+            $progress->start('indexing: /');
+        } else {
+            $output->write($message);
+        }
+
         $index = new Index($rootDir, $config, $cache);
 
-        $files = $index->list(static function (?SplFileInfo $file = null) use ($progress, $rootDir) {
+        $files = $index->list(static function (?SplFileInfo $file = null) use ($progress, $rootDir, $outputIsCI) {
+            if ($outputIsCI) {
+                return;
+            }
+
             if ($file !== null && $file->isDir()) {
                 $path = ltrim(str_replace($rootDir->path()->real, '', $file->getRealPath()), '/');
                 $progress->setMessage($path);
             }
+
             $progress->advance();
         });
 
-        $progress->finish(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+        if (!$outputIsCI) {
+            $progress->finish(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+        } else {
+            $output->writeln(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+        }
         $lastTime = time();
 
         // STEP 3: create file-infos for each file
-        $output->writeln($formatter->formatSection('Indexing', 'calculating file-hashes and thumbnails...'));
-        $progress = new ProgressIndicator($output);
-        $progress->start('hashing: /');
+        $message = $formatter->formatSection('Indexing', 'calculating file-hashes and thumbnails...');
+        if (!$outputIsCI) {
+            $output->writeln($message);
+            $progress->start('hashing: /');
+        } else {
+            $output->write($message);
+        }
+
+        if ($config->indexRoot) {
+            array_unshift($files, '/');
+        }
 
         foreach ($files as $file) {
             $storage = new Storage\Disk($rootDir, $file);
@@ -129,7 +162,7 @@ class Warmup extends Command
                 continue;
             }
 
-            if ($storage->isDir()) {
+            if ($storage->isDir() && !$outputIsCI) {
                 $path = ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/');
                 $progress->setMessage($path);
             }
@@ -141,13 +174,26 @@ class Warmup extends Command
                 $fileInfo->getPreview();
             } catch (ConstraintsException|FileSystemException|INotReadableException $e) {
                 if ($output->isVerbose()) {
-                    $output->writeln("\n  ↳ <fg=yellow>[WARNING]</> skipping {$storage->path()->filename} - {$e->getMessage()}.\n");
+                    $path = $outputIsCI ? ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/') : $storage->path()->filename;
+                    $output->writeln("\n  ↳ <fg=yellow>[WARNING]</> skipping {$path} - {$e->getMessage()}.\n");
                 }
+            } catch (\Throwable $e) {
+                if ($outputIsCI) {
+                    $path = ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/');
+                    $output->writeln("\n path: {$path}");
+                }
+                throw $e;
             }
 
-            $progress->advance();
+            if (!$outputIsCI) {
+                $progress->advance();
+            }
         }
-        $progress->finish(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+        if (!$outputIsCI) {
+            $progress->finish(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+        } else {
+            $output->writeln(sprintf('<info>done</info> (%ds)', time() - $lastTime));
+        }
 
         $output->writeln($formatter->formatSection('Indexing', sprintf(
             'Finished indexing %s files in %ds.',

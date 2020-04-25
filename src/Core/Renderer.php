@@ -3,6 +3,7 @@
 namespace ricwein\Indexer\Core;
 
 use JsonException;
+use League\CommonMark\Environment;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;

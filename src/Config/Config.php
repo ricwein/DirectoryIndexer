@@ -15,6 +15,7 @@ use ricwein\Templater\Exceptions\UnexpectedValueException;
  * Class Config
  * @property-read string URLLocationPath
  * @property-read bool development
+ * @property-read bool indexRoot
  * @property-read bool docker
  * @property-read string|null path
  * @property-read array defaultIndexIgnore
@@ -45,6 +46,7 @@ class Config
         'path' => null,
 
         'defaultIndexIgnore' => [],
+        'indexRoot' => false,
 
         'imports' => [
             ['resource' => 'config.json'],
@@ -152,11 +154,19 @@ class Config
      */
     private function loadConfigEnv(): void
     {
-        foreach ($_ENV as $name => $value) {
+        $environment = getenv();
+        foreach ($environment as $name => $value) {
             switch ($name) {
 
                 case 'INDEX_URL_LOCATION_PATH':
                     $this->config['URLLocationPath'] = (string)$value;
+                    break;
+
+                case 'INDEX_INDEX_ROOT':
+                    if (null === $boolVal = static::toBool($value)) {
+                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
+                    }
+                    $this->config['indexRoot'] = $boolVal;
                     break;
 
                 case 'INDEX_DEVELOPMENT':

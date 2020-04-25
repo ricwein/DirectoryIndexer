@@ -36,4 +36,4 @@ Warmup Cache:
     - docker
     - docker-compose
   script:
-    - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE exec -T php-fpm sh -c "./bin/console cache:warmup --force-index"
+    - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE exec -T php-fpm sh -c "./bin/console cache:warmup --CI --force-index"

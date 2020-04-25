@@ -46,7 +46,9 @@
                 </a>
             {% endif %}
 
-            {% if not(index.isRoot()) %}
+            {% set dirInfo = get_file_info(index.dir().storage()) %}
+
+            {% if config.indexRoot or not(index.isRoot()) or dirInfo.isCached() %}
                 <a class="button is-link is-light view-modal-info hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | url_encode }}?info" aria-label="View Info">
                     <i class="fas fa-eye"></i>
                 </a>
@@ -194,7 +196,7 @@
         {% if readmeFile.isFile() %}
             {% block readme %}
                 {% cache 'readme_md_' ~ readmeFile.path().real %}
-                    <div class="container is-fluid">
+                    <div class="container">
                         <nav class="panel is-accent">
                             <p class="panel-heading">
                                 {{ readmeFile.path().filename }}
