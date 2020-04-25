@@ -96,6 +96,8 @@ class Router
                     $this->renderer->displayPathInfo($path);
                 } elseif ($this->http->getQueryParameter('download') !== null) {
                     $this->renderer->downloadDirectoryZip($path);
+                } elseif ($this->http->getQueryParameter('thumbnail') !== null) {
+                    $this->renderer->displayThumbnail($path);
                 } else {
                     $this->renderer->displayPath($path);
                 }
