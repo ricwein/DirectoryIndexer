@@ -440,14 +440,18 @@ class Renderer
     /**
      * @param string $searchTerm
      * @throws AccessDeniedException
+     * @throws FileSystemException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
+     * @throws UnsupportedException
      */
     public function displayPathSearch(string $searchTerm): void
     {
+        $searchTerm = trim($searchTerm);
+        $searcher = new Search($this->getRootDir(), $this->config, $this->cache);
         $this->display('page/search.html.twig', 200, [
             'subject' => $searchTerm,
-            'searcher' => new Search($this->getRootDir(), $this->config, $this->cache),
+            'searchResults' => $searcher->search($searchTerm),
         ]);
     }
 

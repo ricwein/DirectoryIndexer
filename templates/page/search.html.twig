@@ -11,12 +11,12 @@
 
 {% block site_title %}
     <h1 class="title is-5 navbar-link is-arrowless logo">
-        <a class="navbar-link is-arrowless" aria-label="Pagetitle" href="{{ url.base }}">Search Results for: &nbsp; <strong><small>{{ subject }}</small></strong></a>
+        <a class="navbar-link is-arrowless" aria-label="Pagetitle" href="{{ url.base }}">Search Results for: &nbsp; <strong><small>{{ subject | e }}</small></strong></a>
     </h1>
 {% endblock %}
 
-{% block title %}Search: {{ subject }}{% endblock %}
-{% block search_subject %}{{ subject }}{% endblock %}
+{% block title %}Search: {{ subject | e }}{% endblock %}
+{% block search_subject %}{{ subject | e }}{% endblock %}
 
 {% block search_input %}
     <div class="control has-icons-left">
@@ -44,8 +44,8 @@
             </thead>
 
             <tbody>
-
-            {% for file in searcher.search(subject) %}
+            {% set counter = 0 %}
+            {% for file in searchResults %}
                 {% set fileInfo = get_file_info(file.storage()) %}
 
                 {% if file.isDir() %}
@@ -133,6 +133,9 @@
             </tbody>
         </table>
 
+        <div class="container">
+            <small class="is-pulled-right">Found {{ searchResults | count }} files.</small>
+        </div>
     </div>
 
 {% endblock %}
