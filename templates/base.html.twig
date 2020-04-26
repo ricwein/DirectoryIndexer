@@ -30,7 +30,15 @@
         {% else %}
             {{ asset('/libs/bulma/css/bulma.min.css', 'preload:withFallback') }}
         {% endif %}
-        {{ asset('/scss/style.scss', 'preload:withFallback') }}
+
+        {% if config.views.theme == 'system' %}
+            {{ asset('/scss/style.scss', 'preload:withFallback') }}
+        {% elseif config.views.theme == 'dark' %}
+            {{ asset('/scss/dark.scss', 'preload:withFallback') }}
+        {% elseif config.views.theme == 'light' %}
+            {{ asset('/scss/light.scss', 'preload:withFallback') }}
+        {% endif %}
+
         {{ asset('/libs/font-awesome/css/all.css', 'preload:withFallback') }}
 
     {% endblock %}

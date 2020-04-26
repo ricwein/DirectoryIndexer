@@ -80,6 +80,7 @@ class Config
             'path' => '@view',
             'extension' => '.html.twig',
             'removeComments' => true,
+            'theme' => 'system',
         ],
 
         'assets' => [
@@ -216,6 +217,14 @@ class Config
                         throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
                     }
                     $this->config['views']['removeComments'] = $boolVal;
+                    break;
+
+                case 'INDEX_THEME':
+                    $value = strtolower((string)$value);
+                    if (!in_array($value, ['system', 'light', 'dark'])) {
+                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected either: "system", "dark" or "light", but got %s', $name, $value), 500);
+                    }
+                    $this->config['views']['theme'] = $value;
                     break;
 
                 case 'INDEX_DEFAULT_IGNORE':
