@@ -19,9 +19,8 @@ use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Helper\Constraint;
 use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Core\Cache;
-use ricwein\Indexer\Indexer\FileInfo;
+use ricwein\Indexer\Indexer\FileInfo\FileInfo;
 use ricwein\Indexer\Indexer\Index;
-use ricwein\Templater\Exceptions\UnexpectedValueException as TemplateUnexpectedValueException;
 use RuntimeException;
 use SplFileInfo;
 use Symfony\Component\Console\Command\Command;
@@ -30,6 +29,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use ricwein\Indexer\Config\Config;
+use Throwable;
 
 class Warmup extends Command
 {
@@ -55,9 +55,9 @@ class Warmup extends Command
      * @throws PhpfastcacheInvalidArgumentException
      * @throws PhpfastcacheInvalidConfigurationException
      * @throws ReflectionException
+     * @throws Throwable
      * @throws UnexpectedValueException
      * @throws UnsupportedException
-     * @throws TemplateUnexpectedValueException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -172,12 +172,13 @@ class Warmup extends Command
             try {
                 $fileInfo->getInfo();
                 $fileInfo->getPreview();
+                $fileInfo->type();
             } catch (ConstraintsException|FileSystemException|INotReadableException $e) {
                 if ($output->isVerbose()) {
                     $path = $outputIsCI ? ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/') : $storage->path()->filename;
                     $output->writeln("\n  ↳ <fg=yellow>[WARNING]</> skipping {$path} - {$e->getMessage()}.\n");
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 if ($outputIsCI) {
                     $path = ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/');
                     $output->writeln("\n path: {$path}");

@@ -27,6 +27,18 @@ Deploy:
     - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE down
     - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE up -d --remove-orphans
 
+Collect Logs:
+  stage: deploy
+  environment:
+    name: production
+  when: manual
+  tags:
+    - deploy
+    - docker
+    - docker-compose
+  script:
+    - docker-compose -f docker-compose.base.yml logs
+
 Warmup Cache:
   stage: prepare
   environment:

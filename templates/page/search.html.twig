@@ -52,7 +52,7 @@
 
                     <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
-                            <i class="thumbnail {{ fileInfo.getIconName() }}"></i>
+                            <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}/'>
@@ -92,7 +92,7 @@
                             {% if fileInfo.hasThumbnail() %}
                                 <img class="thumbnail" loading="lazy" src="{{ url.base }}/{{ file.path().filepath | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
                             {% else %}
-                                <i class="thumbnail {{ fileInfo.getIconName() }}"></i>
+                                <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
                             {% endif %}
                         </td>
 

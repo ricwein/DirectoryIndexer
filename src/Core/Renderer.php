@@ -2,8 +2,8 @@
 
 namespace ricwein\Indexer\Core;
 
+use Intervention\Image\Exception\NotReadableException;
 use JsonException;
-use League\CommonMark\Environment;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -12,7 +12,7 @@ use ReflectionClass;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Indexer\DirectoryList;
-use ricwein\Indexer\Indexer\FileInfo;
+use ricwein\Indexer\Indexer\FileInfo\FileInfo;
 use ricwein\Indexer\Indexer\PathIgnore;
 use ricwein\Indexer\Indexer\Search;
 use ricwein\Indexer\Network\Http;
@@ -622,12 +622,22 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        $fileInfo = new FileInfo($storage, $this->cache, $rootDir->storage()->getConstraints());
-        if (null === $thumbnail = $fileInfo->getPreview()) {
-            throw new RuntimeException('Unable to generate Thumbnail.', 400);
-        }
+        try {
+            $fileInfo = new FileInfo($storage, $this->cache, $rootDir->storage()->getConstraints());
 
-        $this->previewFile($thumbnail);
+            if (null === $thumbnail = $fileInfo->getPreview()) {
+                throw new RuntimeException('Unable to generate Thumbnail.', 400);
+            }
+
+            $this->previewFile($thumbnail);
+        } catch (NotReadableException $exception) {
+            if ($this->config->development) {
+                throw $exception;
+            }
+
+            $this->logException($exception);
+            $this->previewFile(new File($storage, $rootDir->storage()->getConstraints()));
+        }
     }
 
     /**

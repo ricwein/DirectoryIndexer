@@ -102,7 +102,7 @@
 
                     <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().basename | url_encode }}">
                         <td>
-                            <i class="thumbnail {{ fileInfo.getIconName() }}"></i>
+                            <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().basename }}/'>
@@ -112,7 +112,7 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            folder
+                            {{ fileInfo.type().name() }}
                         </td>
 
                         <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
@@ -146,7 +146,7 @@
                             {% if fileInfo.hasThumbnail() %}
                                 <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
                             {% else %}
-                                <i class="thumbnail {{ fileInfo.getIconName() }}"></i>
+                                <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
                             {% endif %}
                         </td>
 
@@ -157,7 +157,7 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            file
+                            {{ fileInfo.type().name() }}
                         </td>
 
                         <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
