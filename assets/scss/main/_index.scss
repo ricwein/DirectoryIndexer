@@ -31,6 +31,32 @@
         min-width: 24px;
         max-width: 24px;
       }
+
+      .path.breadcrumb li {
+
+        // move slashes from leading to trailing
+        & + li::before {
+          content: '';
+        }
+
+        & + li::after {
+          content: "\0002f";
+          color: var(--main-fg-color);
+        }
+
+        // remove trailing slash after filename
+        & + li.filename::after {
+          content: '' !important;
+        }
+
+        a {
+          border-bottom: 0.1rem solid transparent;
+
+          &:hover {
+            border-bottom-color: var(--main-bg-color);
+          }
+        }
+      }
     }
 
     tr td:first-of-type {
@@ -81,6 +107,13 @@ tr.clickableRow {
     td {
       color: var(--main-bg-color);
 
+      // enforce color on breadcrumbs pseudo elements slashes
+      .breadcrumb li + li::after,
+      .breadcrumb li + li::before,
+      {
+        color: var(--main-bg-color) !important;
+      }
+
       progress.is-accent {
         border-color: var(--main-bg-color);
         color: var(--main-bg-color);
@@ -112,3 +145,4 @@ tr.clickableRow {
     }
   }
 }
+

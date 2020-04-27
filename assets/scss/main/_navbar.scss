@@ -13,9 +13,20 @@
     border-radius: 0.6rem;
     font-weight: bold;
     color: var(--main-fg-color);
+  }
 
-    .path.breadcrumb li a {
-      padding: 0;
+  a:hover {
+    color: var(--main-accent-color);
+  }
+
+  .breadcrumb.path {
+    a {
+      color: var(--main-fg-color);
+      border-bottom: 0.1rem solid transparent;
+
+      &:hover {
+        border-bottom-color: var(--main-accent-color);
+      }
     }
   }
 }

@@ -137,6 +137,16 @@ class Renderer
             $templater->addFunction(new BaseFunction('get_file_info', function (Storage $storage): FileInfo {
                 return new FileInfo($storage, $this->cache, $storage->getConstraints());
             }));
+            $templater->addFunction(new BaseFunction('iterate_path', static function (string $path): array {
+                $dirs = explode('/', $path);
+                $curPath = '';
+                $result = [];
+                foreach ($dirs as $dir) {
+                    $curPath .= sprintf('/%s', urlencode($dir));
+                    $result[ltrim($curPath, '/')] = $dir;
+                }
+                return $result;
+            }));
             $response = $templater->render($templateFile, $bindings, $filter);
 
             echo $response;

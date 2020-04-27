@@ -56,9 +56,13 @@
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}/'>
-                            <a href="{{ url.base }}/{{ file.path().filepath | url_encode }}">
-                                {{ (file.path().filepath | ltrim('/')) ~ '/' }}
-                            </a>
+                            <nav class="breadcrumb path" aria-label="path">
+                                <ul>
+                                    {% for (path, name) in iterate_path(file.path().filepath) %}
+                                        <li><a href="{{ url.base }}/{{ path }}/" aria-label="Previous Directory {{ name }}">{{ name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </nav>
                         </td>
 
                         <td data-sort-column-key="type">
@@ -97,9 +101,13 @@
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}'>
-                            <a href="{{ url.base }}/{{ file.path().filepath | url_encode }}">
-                                <span class="filename">{{ file.path().filepath | ltrim('/') }}</span>
-                            </a>
+                            <nav class="breadcrumb path" aria-label="path">
+                                <ul>
+                                    {% for (path, name) in iterate_path(file.path().filepath) %}
+                                        <li class="{{ loop.last ? 'filename' }}"><a href="{{ url.base }}/{{ path }}" aria-label="Previous Directory {{ name }}">{{ name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </nav>
                         </td>
 
                         <td data-sort-column-key="type">

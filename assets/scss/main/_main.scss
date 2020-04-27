@@ -54,3 +54,7 @@ progress.is-accent {
   -ms-user-select: text;
   user-select: text;
 }
+
+.path.breadcrumb li a {
+  padding: 0;
+}
