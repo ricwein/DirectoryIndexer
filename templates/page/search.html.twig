@@ -62,7 +62,7 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            folder
+                            {{ fileInfo.type().name() }}
                         </td>
 
                         <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
@@ -103,7 +103,7 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            file
+                            {{ fileInfo.type().name() }}
                         </td>
 
                         <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>

@@ -13,11 +13,13 @@ use ricwein\FileSystem\FileSystem;
 use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Core\Cache;
+use ricwein\Indexer\Indexer\FileInfo\FileInfo;
 
 class Search
 {
     private Directory $rootDir;
     private Index $index;
+    private ?Cache $cache;
 
     /**
      * Search constructor.
@@ -28,6 +30,7 @@ class Search
     public function __construct(Directory $rootDir, Config $config, ?Cache $cache)
     {
         $this->rootDir = $rootDir;
+        $this->cache = $cache;
         $this->index = new Index($rootDir, $config, $cache);
     }
 
@@ -48,10 +51,159 @@ class Search
             return [];
         }
 
+        /** @var Storage\Disk[] $storages */
+        if (preg_match('/^(.+):(.+)$/i', $searchTerm, $matches) === 1 && count($matches) === 3) {
+            $filter = strtolower(trim($matches[1]));
+            $filterValue = trim($matches[2]);
+
+            switch ($filter) {
+                case 'type':
+                    $storages = $this->searchType($filterValue, false);
+                    break;
+
+                case 'mime':
+                    $storages = $this->searchType($filterValue, true);
+                    break;
+
+                case 'hash':
+                    $storages = $this->searchHash($filterValue, null);
+                    break;
+
+                case 'md5':
+                    $storages = $this->searchHash($filterValue, 'md5');
+                    break;
+
+                case 'sha1':
+                    $storages = $this->searchHash($filterValue, 'sha1');
+                    break;
+
+                case 'sha256':
+                    $storages = $this->searchHash($filterValue, 'sha256');
+                    break;
+
+                default:
+                    throw new \UnexpectedValueException("Unknown filter-type: '{$filter}Ä. Supported filters are: 'is:[type]'.", 400);
+
+            }
+
+        } else {
+            $storages = $this->searchFilename($searchTerm);
+        }
+
+        $constraints = $this->rootDir->storage()->getConstraints();
+
+        // warp storages into related FileSystem objects (File/Directory)
+        $files = array_map(static function (Storage\Disk $storage) use ($constraints): FileSystem {
+            if ($storage->isDir()) {
+                return new Directory($storage, $constraints);
+            }
+            return new File($storage, $constraints);
+        }, $storages);
+
+        // sort by type, than by filepath (alphabetical)
+        usort($files, static function (FileSystem $file_a, FileSystem $file_b): int {
+            if ($file_a instanceof Directory && $file_b instanceof File) {
+                return -1;
+            }
+
+            if ($file_a instanceof File && $file_b instanceof Directory) {
+                return 1;
+            }
+
+            return strcmp($file_a->path()->filepath, $file_b->path()->filepath);
+        });
+
+        return $files;
+    }
+
+    /**
+     * @param string $type
+     * @param bool $mimeTypeOnly
+     * @return Storage\Disk[]
+     * @throws AccessDeniedException
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     */
+    private function searchType(string $type, bool $mimeTypeOnly): array
+    {
+        /** @var Storage\Disk[] $matchingFiles */
+        $matchingFiles = [];
+
+        $constraints = $this->rootDir->storage()->getConstraints();
+        foreach ($this->index->list() as $filepath) {
+
+            $storage = new Storage\Disk($this->rootDir->path()->real, $filepath);
+            $fileInfo = new FileInfo($storage, $this->cache, $constraints);
+
+            if (!$fileInfo->isCachedType()) {
+                continue;
+            }
+
+            $fileType = $fileInfo->type();
+
+            if (!$storage->isDir() && stripos($fileType->mime(), $type) !== false) {
+                $matchingFiles[] = $storage;
+            } elseif (!$mimeTypeOnly && stripos($fileType->name(), $type) !== false) {
+                $matchingFiles[] = $storage;
+            }
+        }
+
+        return $matchingFiles;
+    }
+
+    private function searchHash(string $hash, ?string $algo): array
+    {
+        /** @var Storage\Disk[] $matchingFiles */
+        $matchingFiles = [];
+
+        $constraints = $this->rootDir->storage()->getConstraints();
+        foreach ($this->index->list() as $filepath) {
+
+            $storage = new Storage\Disk($this->rootDir->path()->real, $filepath);
+            if ($storage->isDir()) {
+                continue;
+            }
+
+            $fileInfo = new FileInfo($storage, $this->cache, $constraints);
+            if (!$fileInfo->isCached()) {
+                continue;
+            }
+
+            $info = $fileInfo->getInfo();
+            if (!isset($info['hash'])) {
+                continue;
+            }
+
+            switch (true) {
+                case ($algo === null || $algo === 'sha1') && stripos($info['hash']['sha1'], $hash) !== false:
+                case ($algo === null || $algo === 'md5') && stripos($info['hash']['md5'], $hash) !== false:
+                case ($algo === null || $algo === 'sha256') && stripos($info['hash']['sha256'], $hash) !== false:
+                    $matchingFiles[] = $storage;
+                    break;
+            }
+        }
+
+        return $matchingFiles;
+    }
+
+
+    /**
+     * @param string $searchTerm
+     * @return Storage\Disk[]
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     * @throws AccessDeniedException
+     * @throws Exception
+     * @throws UnsupportedException
+     */
+    private function searchFilename(string $searchTerm): array
+    {
         $pattern = str_replace([
-            '/', '.*', '*', 'DOT_STAR'
+            '/', '.*', '*', '__INTERNAL_DOT_STAR___'
         ], [
-            '\\/', 'DOT_STAR', '.*', '.*'
+            '\\/', '__INTERNAL_DOT_STAR___', '.*', '.*'
         ], $searchTerm);
 
         /** @var Storage\Disk[] $matchingFiles */
@@ -72,33 +224,10 @@ class Search
 
             $storage = new Storage\Disk($this->rootDir->path()->real, $filepath);
             $matchingFiles[] = $storage;
-
-
         }
 
-        $constraints = $this->rootDir->storage()->getConstraints();
-
-        // warp storages into related FileSystem objects (File/Directory)
-        $files = array_map(static function (Storage\Disk $storage) use ($constraints): FileSystem {
-            if ($storage->isDir()) {
-                return new Directory($storage, $constraints);
-            }
-            return new File($storage, $constraints);
-        }, $matchingFiles);
-
-        // sort by type, than by filepath (alphabetical)
-        usort($files, static function (FileSystem $file_a, FileSystem $file_b): int {
-            if ($file_a instanceof Directory && $file_b instanceof File) {
-                return -1;
-            }
-
-            if ($file_a instanceof File && $file_b instanceof Directory) {
-                return 1;
-            }
-
-            return strcmp($file_a->path()->filepath, $file_b->path()->filepath);
-        });
-
-        return $files;
+        return $matchingFiles;
     }
+
+
 }

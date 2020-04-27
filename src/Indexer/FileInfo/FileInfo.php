@@ -44,6 +44,13 @@ class FileInfo
         return $cacheItem->isHit();
     }
 
+    public function isCachedType(): bool
+    {
+        $cacheKey = static::buildCacheKey('typeOf', $this->storage);
+        $cacheItem = $this->cache->getItem($cacheKey);
+        return $cacheItem->isHit();
+    }
+
     /**
      * @return array
      * @throws AccessDeniedException

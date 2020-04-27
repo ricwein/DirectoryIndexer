@@ -46,3 +46,11 @@ progress.is-accent {
     background-image: linear-gradient(to right, var(--main-accent-color) 30%, var(--main-bg-color) 30%);
   }
 }
+
+.tingle-modal-box .content ul li {
+  -moz-user-select: text;
+  -khtml-user-select: text;
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
