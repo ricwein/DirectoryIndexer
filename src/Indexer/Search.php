@@ -20,6 +20,7 @@ class Search
     private Directory $rootDir;
     private Index $index;
     private ?Cache $cache;
+    private PathIgnore $pathIgnore;
 
     /**
      * Search constructor.
@@ -32,6 +33,7 @@ class Search
         $this->rootDir = $rootDir;
         $this->cache = $cache;
         $this->index = new Index($rootDir, $config, $cache);
+        $this->pathIgnore = new PathIgnore($rootDir, $config);
     }
 
     /**
@@ -82,13 +84,18 @@ class Search
                     break;
 
                 default:
-                    throw new \UnexpectedValueException("Unknown filter-type: '{$filter}Ä. Supported filters are: 'is:[type]'.", 400);
+                    throw new \UnexpectedValueException("Unknown filter-type: '{$filter}. Supported filters are: 'type:[term]', 'mime:[term]', 'hash:[term]'.", 400);
 
             }
 
         } else {
             $storages = $this->searchFilename($searchTerm);
         }
+
+        // remove hidden storages (the index-list doesn't contain denied storages, but hidden ones are listed)
+        $storages = array_filter($storages, function (Storage\Disk $storage): bool {
+            return !$this->pathIgnore->isHiddenStorage($storage);
+        });
 
         $constraints = $this->rootDir->storage()->getConstraints();
 

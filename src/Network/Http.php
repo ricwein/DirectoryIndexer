@@ -2,12 +2,15 @@
 
 namespace ricwein\Indexer\Network;
 
+use DaveRandom\Resume\Range;
+use DaveRandom\Resume\RangeSet;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\FileNotFoundException;
-use ricwein\FileSystem\Exceptions\RuntimeException;
+use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\File;
+use RuntimeException;
 
 /**
  * class-namespace for direct http manipulation methods
@@ -341,83 +344,17 @@ class Http
     }
 
     /**
-     * @param int $totalSize
-     * @return int[] [start, end, length]
-     * @throws RuntimeException
+     * @return RangeSet|null
      */
-    private function parseRange(int $totalSize): array
+    protected function getRangeSet(): ?RangeSet
     {
         $byteRange = $this->get('HTTP_RANGE', static::SERVER, null);
 
         if ($byteRange === null) {
-            return [0, $totalSize - 1, $totalSize];
+            return null;
         }
 
-        if (preg_match('/^bytes=\d*-\d*(,\d*-\d*)*$/', $byteRange) !== 1) {
-            throw new RuntimeException('Invalid range defined.', 416);
-        }
-
-        $byteRange = substr($byteRange, strpos($byteRange, '=') + 1);
-
-        // TODO: add multipart support
-        if (strpos($byteRange, ',') !== false) {
-            throw new RuntimeException('Unsupported multi range request.', 416);
-        }
-
-        $limits = explode('-', $byteRange);
-        if (count($limits) !== 2) {
-            throw new RuntimeException('Invalid range defined.', 416);
-        }
-
-        $limits = array_map(static function (string $limit): ?int {
-            return ($limit !== '' && is_numeric($limit)) ? ((int)$limit) : null;
-        }, $limits);
-
-        // parse range options:
-
-        // end-bound: '-500'
-        if ($limits[0] === null && $limits[1] !== null) {
-            // [524, 1023, 500]
-            $length = min($limits[1], $totalSize - 1);
-            return [$totalSize - $length, $totalSize - 1, $length];
-        }
-
-        // start-bound: '500-'
-        if ($limits[0] !== null && $limits[1] === null) {
-            // [500, 1023, 524]
-            $start = min($limits[0], $totalSize - 1);
-            return [$start, $totalSize - 1, $totalSize - $start];
-        }
-
-        // full-range: '200-500'
-        if ($limits[0] !== null && $limits[1] !== null) {
-            $start = $limits[0];
-            $end = min($limits[1], $totalSize - 1);
-
-            return [$start, $end, $end - $start];
-        }
-
-        throw new RuntimeException('Invalid range defined.', 416);
-    }
-
-    /**
-     * @param int $totalSize
-     * @return array
-     * @throws RuntimeException
-     */
-    protected function getRange(int $totalSize): array
-    {
-        [$rangeStart, $rangeEnd, $length] = $this->parseRange($totalSize);
-
-        if ($rangeEnd > $totalSize || $rangeStart > $rangeEnd || $rangeStart < 0 || $length > $totalSize) {
-            throw new RuntimeException('Invalid Range bounds.', 416);
-        }
-
-        if ($rangeEnd === $rangeStart) {
-            throw new RuntimeException('Invalid Range bounds: zero length.', 416);
-        }
-
-        return [$rangeStart, $rangeEnd, $length];
+        return RangeSet::createFromHeader($byteRange);
     }
 
     /**
@@ -427,46 +364,53 @@ class Http
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
-     * @throws RuntimeException
+     * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
      */
     protected function streamFile(File $file, bool $forceDownload, ?string $asName = null): void
     {
-        $size = $file->getSize();
-        [$rangeStart, $rangeEnd, $rangeLength] = $this->getRange($size);
-        $isPartialRequest = ($rangeStart > 0 || $rangeEnd < ($size - 1));
+        $totalSize = $file->getSize();
 
         $headers = [
-            'Content-Type' => $file->getType(true),
+            'Content-Type' => $file->getType(false),
             'Accept-Ranges' => 'bytes',
             'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
             'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
             'Pragma' => 'no-cache',
         ];
 
-        if ($isPartialRequest) {
-            static::sendStatusHeader(206);
-            $headers['Content-Length'] = $rangeLength;
-            $headers['Content-Disposition'] = 'inline';
-            $headers['Content-Range'] = sprintf('%s-%s/%s', $rangeStart, $rangeEnd, $size);
-            $headers['Content-Transfer-Encoding'] = 'binary';
-            $headers['Connection'] = 'close';
-        } else {
-            static::sendStatusHeader(200);
-            $headers['Content-Length'] = $size;
-        }
-
         if ($forceDownload) {
             $filename = $asName ?? $file->path()->filename;
             $headers['Content-Disposition'] = ['attachment', "filename=\"{$filename}\""];
         }
 
+        // full file request
+        $rangeSet = $this->getRangeSet();
+        $ranges = $rangeSet !== null ? $rangeSet->getRangesForSize($totalSize) : null;
+        if (null === $rangeSet || $ranges === null) {
+            $headers['Content-Length'] = $totalSize;
+            static::sendStatusHeader(200);
+            static::sendHeaders($headers);
+            $file->stream();
+            exit(0);
+        }
+
+        // partial file request
+        $headers['Content-Length'] = array_sum(array_map(fn(Range $range) => $range->getLength(), $ranges));
+        $headers['Content-Range'] = sprintf('%s %s/%s', $rangeSet->getUnit(), \implode(',', $ranges), $totalSize);
+        $headers['Content-Transfer-Encoding'] = 'binary';
+        $headers['Content-Disposition'] ??= 'inline';
+
+        static::sendStatusHeader(206);
         static::sendHeaders($headers);
 
-        if ($isPartialRequest) {
-            $file->stream($rangeStart, $rangeLength);
-        } else {
-            $file->stream();
+        foreach ($ranges as $range) {
+            if ($range->getStart() !== 0 || $range->getLength() !== $totalSize) {
+                $file->stream($range->getStart(), $range->getLength());
+            } else {
+                $file->stream();
+            }
         }
+        exit(0);
     }
 }

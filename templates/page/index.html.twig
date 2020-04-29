@@ -154,6 +154,9 @@
                             <a href="{{ url.current }}/{{ file.path().filename | url_encode }}">
                                 <span class="filename">{{ file.path().filename }}</span>
                             </a>
+                            <a href="{{ url.current }}/{{ file.path().filename | url_encode }}?download" class="is-pulled-right">
+                                <i class="fas fa-download"></i>
+                            </a>
                         </td>
 
                         <td data-sort-column-key="type">
@@ -184,7 +187,7 @@
 
                 <tr>
                     <td colspan="6">
-                        <p>nothing here</p>
+                        <h5 class="title is-5"><i class="far fa-folder-open"></i> This folder is empty.</h5>
                     </td>
                 </tr>
             {% endfor %}
