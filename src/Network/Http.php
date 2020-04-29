@@ -2,6 +2,13 @@
 
 namespace ricwein\Indexer\Network;
 
+use ricwein\FileSystem\Exceptions\AccessDeniedException;
+use ricwein\FileSystem\Exceptions\ConstraintsException;
+use ricwein\FileSystem\Exceptions\FileNotFoundException;
+use ricwein\FileSystem\Exceptions\RuntimeException;
+use ricwein\FileSystem\Exceptions\UnexpectedValueException;
+use ricwein\FileSystem\File;
+
 /**
  * class-namespace for direct http manipulation methods
  */
@@ -331,5 +338,135 @@ class Http
     protected function getDomain(): string
     {
         return $this->get(['SERVER_NAME', 'HTTP_X_ORIGINAL_HOST', 'HTTP_HOST'], ['server']);
+    }
+
+    /**
+     * @param int $totalSize
+     * @return int[] [start, end, length]
+     * @throws RuntimeException
+     */
+    private function parseRange(int $totalSize): array
+    {
+        $byteRange = $this->get('HTTP_RANGE', static::SERVER, null);
+
+        if ($byteRange === null) {
+            return [0, $totalSize - 1, $totalSize];
+        }
+
+        if (preg_match('/^bytes=\d*-\d*(,\d*-\d*)*$/', $byteRange) !== 1) {
+            throw new RuntimeException('Invalid range defined.', 416);
+        }
+
+        $byteRange = substr($byteRange, strpos($byteRange, '=') + 1);
+
+        // TODO: add multipart support
+        if (strpos($byteRange, ',') !== false) {
+            throw new RuntimeException('Unsupported multi range request.', 416);
+        }
+
+        $limits = explode('-', $byteRange);
+        if (count($limits) !== 2) {
+            throw new RuntimeException('Invalid range defined.', 416);
+        }
+
+        $limits = array_map(static function (string $limit): ?int {
+            return ($limit !== '' && is_numeric($limit)) ? ((int)$limit) : null;
+        }, $limits);
+
+        // parse range options:
+
+        // end-bound: '-500'
+        if ($limits[0] === null && $limits[1] !== null) {
+            // [524, 1023, 500]
+            $length = min($limits[1], $totalSize - 1);
+            return [$totalSize - $length, $totalSize - 1, $length];
+        }
+
+        // start-bound: '500-'
+        if ($limits[0] !== null && $limits[1] === null) {
+            // [500, 1023, 524]
+            $start = min($limits[0], $totalSize - 1);
+            return [$start, $totalSize - 1, $totalSize - $start];
+        }
+
+        // full-range: '200-500'
+        if ($limits[0] !== null && $limits[1] !== null) {
+            $start = $limits[0];
+            $end = min($limits[1], $totalSize - 1);
+
+            return [$start, $end, $end - $start];
+        }
+
+        throw new RuntimeException('Invalid range defined.', 416);
+    }
+
+    /**
+     * @param int $totalSize
+     * @return array
+     * @throws RuntimeException
+     */
+    protected function getRange(int $totalSize): array
+    {
+        [$rangeStart, $rangeEnd, $length] = $this->parseRange($totalSize);
+
+        if ($rangeEnd > $totalSize || $rangeStart > $rangeEnd || $rangeStart < 0 || $length > $totalSize) {
+            throw new RuntimeException('Invalid Range bounds.', 416);
+        }
+
+        if ($rangeEnd === $rangeStart) {
+            throw new RuntimeException('Invalid Range bounds: zero length.', 416);
+        }
+
+        return [$rangeStart, $rangeEnd, $length];
+    }
+
+    /**
+     * @param File $file
+     * @param bool $forceDownload
+     * @param string|null $asName
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    protected function streamFile(File $file, bool $forceDownload, ?string $asName = null): void
+    {
+        $size = $file->getSize();
+        [$rangeStart, $rangeEnd, $rangeLength] = $this->getRange($size);
+        $isPartialRequest = ($rangeStart > 0 || $rangeEnd < ($size - 1));
+
+        $headers = [
+            'Content-Type' => $file->getType(true),
+            'Accept-Ranges' => 'bytes',
+            'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
+            'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
+            'Pragma' => 'no-cache',
+        ];
+
+        if ($isPartialRequest) {
+            static::sendStatusHeader(206);
+            $headers['Content-Length'] = $rangeLength;
+            $headers['Content-Disposition'] = 'inline';
+            $headers['Content-Range'] = sprintf('%s-%s/%s', $rangeStart, $rangeEnd, $size);
+            $headers['Content-Transfer-Encoding'] = 'binary';
+            $headers['Connection'] = 'close';
+        } else {
+            static::sendStatusHeader(200);
+            $headers['Content-Length'] = $size;
+        }
+
+        if ($forceDownload) {
+            $filename = $asName ?? $file->path()->filename;
+            $headers['Content-Disposition'] = ['attachment', "filename=\"{$filename}\""];
+        }
+
+        static::sendHeaders($headers);
+
+        if ($isPartialRequest) {
+            $file->stream($rangeStart, $rangeLength);
+        } else {
+            $file->stream();
+        }
     }
 }

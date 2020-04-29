@@ -26,7 +26,8 @@
     "matthiasmullie/minify": "^1.3",
     "league/commonmark": "^1.4",
     "symfony/console": "^5.0",
-    "intervention/image": "^2.5"
+    "intervention/image": "^2.5",
+    "daverandom/resume": "^0.0.3"
   },
   "require-dev": {
     "roave/security-advisories": "dev-master",

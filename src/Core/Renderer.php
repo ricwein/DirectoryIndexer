@@ -270,6 +270,8 @@ class Renderer
     public function displayError(Throwable $throwable): void
     {
         $previousOutputs = ob_get_clean();
+        $this->logException($throwable);
+
         Http::sendStatusHeader($throwable->getCode());
 
         try {
@@ -354,8 +356,6 @@ class Renderer
 
                 $response = $templater->render('error/unhandled_error.html.twig', $bindings);
             }
-
-            $this->logException($throwable);
 
             echo $response;
             exit($throwable->getCode());
@@ -492,7 +492,7 @@ class Renderer
 
 
         if ($storage->isFile()) {
-            $this->previewFile(new File($storage));
+            $this->displayFile(new File($storage));
         }
 
         if (!$storage->isDir()) {
@@ -639,14 +639,14 @@ class Renderer
                 throw new RuntimeException('Unable to generate Thumbnail.', 400);
             }
 
-            $this->previewFile($thumbnail);
+            $this->displayFile($thumbnail);
         } catch (NotReadableException $exception) {
             if ($this->config->development) {
                 throw $exception;
             }
 
             $this->logException($exception);
-            $this->previewFile(new File($storage, $rootDir->storage()->getConstraints()));
+            $this->displayFile(new File($storage, $rootDir->storage()->getConstraints()));
         }
     }
 
@@ -674,7 +674,7 @@ class Renderer
         }
 
         if (!$storage->isDir()) {
-            $this->streamFile(new File($storage));
+            $this->downloadFile(new File($storage));
         }
 
         $zipCache = new Storage\Disk\Temp();
@@ -693,7 +693,7 @@ class Renderer
         });
         $zip->commit();
 
-        $this->streamFile($zip, "{$storage->path()->basename}.zip");
+        $this->downloadFile($zip, "{$storage->path()->basename}.zip");
     }
 
     /**
@@ -701,24 +701,12 @@ class Renderer
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
+     * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
      */
-    private function previewFile(File $file): void
+    private function displayFile(File $file): void
     {
-        $headers = [
-            'Content-Type' => $file->getType(true),
-            'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
-        ];
-
-        if ($this->config->cache['enabled']) {
-            $headers['Cache-Control'] = "max-age={$this->config->cache['ttl']}";
-        }
-
-        Http::sendHeaders($headers);
-
-
-        $file->stream();
-        exit(0);
+        $this->http->streamFile($file, false);
     }
 
     /**
@@ -730,45 +718,9 @@ class Renderer
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
      */
-    private function streamFile(File $file, ?string $asName = null): void
+    private function downloadFile(File $file, ?string $asName = null): void
     {
-        $size = $file->getSize();
-        $rangeStart = 0;
-        $rangeEnd = $size;
-
-        // parse http range request header
-        $range = $this->http->get('HTTP_RANGE', Http::SERVER, null);
-        if (($range !== null) && preg_match('/bytes=\h*(\d+)-(\d*)[\D.*]?/i', $range, $matches) === 1) {
-            $rangeStart = (int)$matches[0];
-
-            if (!empty($matches[1])) {
-                $rangeEnd = (int)$matches[1];
-            }
-        }
-
-        if ($rangeStart > 0 || $rangeEnd < $size) {
-            Http::sendStatusHeader(206);
-        } else {
-            Http::sendStatusHeader(200);
-        }
-
-        $filename = $asName ?? $file->path()->filename;
-
-        Http::sendHeaders([
-            'Content-Type' => $file->getType(true),
-            'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
-            'Pragma' => 'no-cache',
-            'Accept-Ranges' => 'bytes',
-            'Content-Length' => $rangeEnd - $rangeStart,
-            'Content-Range' => "{$rangeStart}-{$rangeEnd}/{$size}",
-            'Content-Disposition' => ['attachment', "filename=\"{$filename}\""],
-            'Content-Transfer-Encoding' => 'binary',
-            'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
-            'Connection' => 'close',
-        ]);
-
-        $file->stream($rangeStart, $rangeEnd - $rangeStart);
-        exit(0);
+        $this->http->streamFile($file, true, $asName);
     }
 
     /**
