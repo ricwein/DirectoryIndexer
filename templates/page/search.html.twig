@@ -52,7 +52,7 @@
 
                     <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
-                            <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
+                            <i class="thumbnail {{ fileInfo.getMetaData().faIcon }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}/'>
@@ -66,17 +66,17 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            {{ fileInfo.type().name() }}
+                            {{ fileInfo.getMetaData().type }}
                         </td>
 
-                        <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
-                            {{ file.getTime() | date('d.m.Y H:i:s') }}
+                        {% set mtime = (fileInfo.getMetaData().timeLastModified ?? file.getTime()) %}
+                        <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
+                            {{ mtime | date('d.m.Y H:i:s') }}
                         </td>
 
                         {% if fileInfo.isCached() %}
-                            {% set info = fileInfo.getInfo() %}
                             <td data-sort-column-key="size" data-sort='{{ info.size.bytes }}'>
-                                {{ info.size.bytes | format_bytes(1) }}
+                                {{ fileInfo.getMetaData().size | format_bytes(1) }}
                             </td>
                         {% else %}
                             <td data-sort-column-key="size" data-sort='999999999999999'>
@@ -93,10 +93,10 @@
 
                     <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
-                            {% if fileInfo.hasThumbnail() %}
+                            {% if fileInfo.canHasThumbnail() %}
                                 <img class="thumbnail" loading="lazy" src="{{ url.base }}/{{ file.path().filepath | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
                             {% else %}
-                                <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
+                                <i class="thumbnail {{ fileInfo.getMetaData().faIcon }}"></i>
                             {% endif %}
                         </td>
 
@@ -111,15 +111,17 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            {{ fileInfo.type().name() }}
+                            {{ fileInfo.getMetaData().type }}
                         </td>
 
-                        <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
-                            {{ file.getTime | date('d.m.Y H:i:s') }}
+                        {% set mtime = (fileInfo.getMetaData().timeLastModified ?? file.getTime()) %}
+                        <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
+                            {{ mtime | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td data-sort-column-key="size" data-sort='{{ file.getSize() }}'>
-                            {{ file.getSize() | format_bytes(0) }}
+                        {% set filesize = (fileInfo.getMetaData().size ?? file.getSize()) %}
+                        <td data-sort-column-key="size" data-sort='{{ filesize }}'>
+                            {{ filesize | format_bytes(1) }}
                         </td>
 
                         <td>

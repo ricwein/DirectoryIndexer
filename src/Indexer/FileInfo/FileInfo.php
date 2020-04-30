@@ -5,7 +5,6 @@ namespace ricwein\Indexer\Indexer\FileInfo;
 use Intervention\Image\Constraint as IConstraint;
 use Intervention\Image\Image as IImage;
 use ricwein\FileSystem\Directory;
-use ricwein\FileSystem\Enum\Hash;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\Exception;
@@ -15,40 +14,48 @@ use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\File;
 use ricwein\FileSystem\Storage;
+use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Core\Cache;
-use ricwein\Templater\Config;
+use ricwein\Templater\Config as TemplateConfig;
 use ricwein\Templater\Engine\CoreFunctions;
 
 class FileInfo
 {
-    private const THUMBNAIL_WIDTH = 32;
-    private const THUMBNAIL_HEIGHT = 32;
-    private const CACHE_DURATION = 365 * 24 * 60 * 60; // 1y
+    public const THUMBNAIL_WIDTH = 32;
+    public const THUMBNAIL_HEIGHT = 32;
+    public const CACHE_DURATION = 365 * 24 * 60 * 60; // 1y
 
-    private Storage $storage;
+    private Storage\Disk $storage;
     private ?Cache $cache;
     private int $constraints;
-    private ?FileType $type = null;
+    private Config $config;
+    private Directory $rootDir;
+    private ?MetaData $metaData;
 
-    public function __construct(Storage $storage, ?Cache $cache, int $constraints)
+    /**
+     * FileInfo constructor.
+     * @param Storage\Disk $storage
+     * @param Cache|null $cache
+     * @param Config $config
+     * @param Directory $rootDir
+     * @param int $constraints
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function __construct(Storage\Disk $storage, ?Cache $cache, Config $config, Directory $rootDir, int $constraints)
     {
         $this->storage = $storage;
         $this->cache = $cache;
+        $this->rootDir = $rootDir;
         $this->constraints = $constraints;
+        $this->config = $config;
+
+        $this->metaData = $cache !== null ? MetaData::fromCache($storage, $cache) : null;
     }
 
     public function isCached(): bool
     {
-        $cacheKey = static::buildCacheKey('infoOf', $this->storage);
-        $cacheItem = $this->cache->getItem($cacheKey);
-        return $cacheItem->isHit();
-    }
-
-    public function isCachedType(): bool
-    {
-        $cacheKey = static::buildCacheKey('typeOf', $this->storage);
-        $cacheItem = $this->cache->getItem($cacheKey);
-        return $cacheItem->isHit();
+        return $this->metaData !== null;
     }
 
     /**
@@ -56,38 +63,56 @@ class FileInfo
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws Exception
-     * @throws FileNotFoundException
      * @throws RuntimeException
      * @throws UnexpectedValueException
-     * @throws UnsupportedException
      */
     public function getInfo(): array
     {
-        if ($this->cache === null) {
-            return $this->fetchInfo();
+        $metaData = $this->getMetaData();
+        return $this->formatMetaData($metaData);
+    }
+
+    /**
+     * @return MetaData
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function getMetaData(): MetaData
+    {
+        if ($this->metaData !== null) {
+            return $this->metaData;
         }
 
-        $cacheKey = static::buildCacheKey('infoOf', $this->storage);
-        $cacheItem = $this->cache->getItem($cacheKey);
+        return $this->refreshMetaData();
+    }
 
-        if ($cacheItem->isHit()) {
-            return $cacheItem->get();
-        }
-
-        $info = $this->fetchInfo();
-        $cacheItem->set($info);
-        $cacheItem->expiresAfter(static::CACHE_DURATION);
-        $this->cache->save($cacheItem);
-
-        return $info;
+    /**
+     * @return MetaData
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function refreshMetaData(): MetaData
+    {
+        $metaData = MetaData::fromStorage($this->storage->setConstraints($this->constraints), $this->rootDir, $this->config);
+        $metaData->saveToCache($this->cache);
+        $this->metaData = $metaData;
+        return $metaData;
     }
 
     /**
      * @param string $prefix
-     * @param Storage $storage
+     * @param Storage\Disk $storage
      * @return string
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
      */
-    protected static function buildCacheKey(string $prefix, Storage $storage): string
+    protected static function buildCacheKey(string $prefix, Storage\Disk $storage): string
     {
         return str_replace(
             ['{', '}', '(', ')', '/', '\\', '@', ':'],
@@ -100,53 +125,14 @@ class FileInfo
         );
     }
 
-    public function hasThumbnail(): bool
+    public function canHasThumbnail(): bool
     {
-        if (!$this->storage instanceof Storage\Disk) {
-            return false;
+        if ($this->metaData !== null) {
+            return $this->metaData->supportsThumbnail;
         }
 
-        $extension = strtolower($this->storage->path()->extension);
-
-        return in_array($extension, [
-            'png', 'gif', 'bmp', 'jpg', 'jpeg'
-        ], true);
+        return MetaData::canHasThumbnail($this->storage);
     }
-
-    /**
-     * @return FileType
-     * @throws RuntimeException
-     * @throws UnexpectedValueException
-     */
-    public function type(): FileType
-    {
-        if ($this->type !== null) {
-            return $this->type;
-        }
-
-        if ($this->cache === null) {
-            $type = FileType::fromStorage($this->storage);
-            $this->type = $type;
-            return $type;
-        }
-
-        $cacheKey = static::buildCacheKey('typeOf', $this->storage);
-        $cacheItem = $this->cache->getItem($cacheKey);
-
-        if ($cacheItem->isHit()) {
-            return $cacheItem->get();
-        }
-
-        $type = FileType::fromStorage($this->storage);
-
-        $cacheItem->set($type);
-        $cacheItem->expiresAfter(static::CACHE_DURATION);
-        $this->cache->save($cacheItem);
-        $this->type = $type;
-
-        return $type;
-    }
-
 
     /**
      * @return File\Image|null
@@ -154,9 +140,9 @@ class FileInfo
      * @throws Exception
      * @throws UnsupportedException
      */
-    public function getPreview(): ?File\Image
+    public function getThumbnail(): ?File\Image
     {
-        if (!$this->hasThumbnail()) {
+        if (!$this->canHasThumbnail()) {
             return null;
         }
 
@@ -183,49 +169,31 @@ class FileInfo
         return $thumbnail;
     }
 
-    /**
-     * @return array
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws Exception
-     * @throws FileNotFoundException
-     * @throws RuntimeException
-     * @throws UnexpectedValueException
-     * @throws UnsupportedException
-     */
-    private function fetchInfo(): array
+    private function formatMetaData(MetaData $metaData): array
     {
-        if ($this->storage->isDir()) {
-            $dir = new Directory($this->storage, $this->constraints);
-            $size = $dir->getSize();
-
-            return [
-                'filename' => $dir->path()->basename,
-                'type' => $this->type()->asArray(),
-                'isDir' => true,
-                'size' => [
-                    'bytes' => $size,
-                    'hr' => (new CoreFunctions(new Config))->formatBytes($size, 1),
-                ],
-            ];
-        }
-
-        $file = new File($this->storage, $this->constraints);
-        $size = $file->getSize();
-
         return [
-            'filename' => $file->path()->filename,
-            'type' => $this->type()->asArray(),
-            'isDir' => false,
+            'filename' => $metaData->name,
+            'hidden' => $metaData->isHidden,
+            'isDir' => $metaData->isDir,
+            'type' => [
+                'name' => $metaData->type,
+                'mime' => $metaData->mimeType,
+                'icon' => $metaData->faIcon,
+            ],
             'size' => [
-                'bytes' => $size,
-                'hr' => (new CoreFunctions(new Config))->formatBytes($size, 1),
+                'bytes' => $metaData->size,
+                'hr' => (new CoreFunctions(new TemplateConfig))->formatBytes($metaData->size, 1),
             ],
             'hash' => [
-                'md5' => $file->getHash(Hash::CONTENT, 'md5'),
-                'sha1' => $file->getHash(Hash::CONTENT, 'sha1'),
-                'sha256' => $file->getHash(Hash::CONTENT, 'sha256'),
+                'md5' => $metaData->hashMD5,
+                'sha1' => $metaData->hashSHA1,
+                'sha256' => $metaData->hashSHA256,
             ],
+            'time' => [
+                'modified' => $metaData->timeLastModified,
+                'accessed' => $metaData->timeLastAccessed,
+                'created' => $metaData->timeCreated,
+            ]
         ];
     }
 

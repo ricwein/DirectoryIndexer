@@ -102,7 +102,7 @@
 
                     <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().basename | url_encode }}">
                         <td>
-                            <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
+                            <i class="thumbnail {{ fileInfo.getMetaData().faIcon }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().basename }}/'>
@@ -112,7 +112,7 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            {{ fileInfo.type().name() }}
+                            {{ fileInfo.getMetaData().type }}
                         </td>
 
                         <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
@@ -120,12 +120,11 @@
                         </td>
 
                         {% if fileInfo.isCached() %}
-                            {% set info = fileInfo.getInfo() %}
-                            <td data-sort-column-key="size" data-sort='{{ info.size.bytes }}'>
-                                {{ info.size.bytes | format_bytes(1) }}
+                            <td data-sort-column-key="size" data-sort='{{ fileInfo.getMetaData().size }}'>
+                                {{ fileInfo.getMetaData().size | format_bytes(1) }}
 
                                 {% if dirInfo.isCached() %}
-                                    <progress class="progress is-accent is-small" value="{{ info.size.bytes }}" max="{{ dirInfo.getInfo().size.bytes }}">15%</progress>
+                                    <progress class="progress is-accent is-small" value="{{ fileInfo.getMetaData().size }}" max="{{ dirInfo.getInfo().size.bytes }}">TODO%</progress>
                                 {% endif %}
                             </td>
                         {% else %}
@@ -143,10 +142,10 @@
 
                     <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
                         <td>
-                            {% if fileInfo.hasThumbnail() %}
+                            {% if fileInfo.canHasThumbnail() %}
                                 <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
                             {% else %}
-                                <i class="thumbnail {{ fileInfo.type().icon() }}"></i>
+                                <i class="thumbnail {{ fileInfo.getMetaData().faIcon }}"></i>
                             {% endif %}
                         </td>
 
@@ -160,19 +159,20 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            {{ fileInfo.type().name() }}
+                            {{ fileInfo.getMetaData().type }}
                         </td>
 
-                        <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
-                            {{ file.getTime() | date('d.m.Y H:i:s') }}
+                        {% set mtime = (fileInfo.getMetaData().timeLastModified ?? file.getTime()) %}
+                        <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
+                            {{ mtime | date('d.m.Y H:i:s') }}
                         </td>
 
-                        <td data-sort-column-key="size" data-sort='{{ file.getSize() }}'>
-                            {% set fileSize = file.getSize() %}
-                            {{ fileSize | format_bytes(1) }}
+                        {% set filesize = (fileInfo.getMetaData().size ?? file.getSize()) %}
+                        <td data-sort-column-key="size" data-sort='{{ filesize }}'>
+                            {{ filesize | format_bytes(1) }}
 
                             {% if dirInfo.isCached() %}
-                                <progress class="progress is-accent is-small" value="{{ fileSize }}" max="{{ dirInfo.getInfo().size.bytes }}">15%</progress>
+                                <progress class="progress is-accent is-small" value="{{ filesize }}" max="{{ dirInfo.getMetaData().size }}">TODO%</progress>
                             {% endif %}
                         </td>
 

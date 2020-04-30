@@ -134,15 +134,15 @@ class Renderer
             $templater = new Templater($this->getTemplaterConfig(), $this->cache->getDriver());
             $templater->addFunction(new BaseFunction('asset', [$this, 'convertAssetURL']));
             $templater->addFunction(new BaseFunction('render_markdown', [$this, 'convertMarkdown']));
-            $templater->addFunction(new BaseFunction('get_file_info', function (Storage $storage): FileInfo {
-                return new FileInfo($storage, $this->cache, $storage->getConstraints());
+            $templater->addFunction(new BaseFunction('get_file_info', function (Storage\Disk $storage): FileInfo {
+                return new FileInfo($storage, $this->cache, $this->config, $this->getRootDir(), $storage->getConstraints());
             }));
             $templater->addFunction(new BaseFunction('iterate_path', static function (string $path): array {
                 $dirs = explode('/', $path);
                 $curPath = '';
                 $result = [];
                 foreach ($dirs as $dir) {
-                    $curPath .= sprintf('/%s', urlencode($dir));
+                    $curPath .= sprintf('/%s', rawurlencode($dir));
                     $result[ltrim($curPath, '/')] = $dir;
                 }
                 return $result;
@@ -595,7 +595,7 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        $info = (new FileInfo($storage, $this->cache, $rootDir->storage()->getConstraints()))->getInfo();
+        $info = (new FileInfo($storage, $this->cache, $this->config, $rootDir, $rootDir->storage()->getConstraints()))->getInfo();
 
         Http::sendStatusHeader(200);
         Http::sendHeaders([
@@ -633,9 +633,9 @@ class Renderer
         }
 
         try {
-            $fileInfo = new FileInfo($storage, $this->cache, $rootDir->storage()->getConstraints());
+            $fileInfo = new FileInfo($storage, $this->cache, $this->config, $rootDir, $rootDir->storage()->getConstraints());
 
-            if (null === $thumbnail = $fileInfo->getPreview()) {
+            if (null === $thumbnail = $fileInfo->getThumbnail()) {
                 throw new RuntimeException('Unable to generate Thumbnail.', 400);
             }
 
@@ -879,10 +879,7 @@ class Renderer
             $fileURL = sprintf('%s/assets/%s.js', $baseURL, $filename,);
         }
 
-        switch (true) {
-            default:
-                return "<script async src=\"{$fileURL}\"></script>";
 
-        }
+        return "<script async src=\"{$fileURL}\"></script>";
     }
 }

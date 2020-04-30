@@ -162,17 +162,21 @@ class Warmup extends Command
                 continue;
             }
 
-            if ($storage->isDir() && !$outputIsCI) {
+            if (!$outputIsCI && $storage->isDir()) {
                 $path = ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/');
                 $progress->setMessage($path);
             }
 
-            $fileInfo = new FileInfo($storage, $cache, $rootDir->storage()->getConstraints());
-
             try {
-                $fileInfo->getInfo();
-                $fileInfo->getPreview();
-                $fileInfo->type();
+
+                $fileInfo = new FileInfo($storage, $cache, $config, $rootDir, $rootDir->storage()->getConstraints());
+
+                // fetch and calculate file metadata
+                $fileInfo->getMetaData();
+
+                // try to create thumbnail if possible
+                $fileInfo->getThumbnail();
+
             } catch (ConstraintsException|FileSystemException|INotReadableException $e) {
                 if ($output->isVerbose()) {
                     $path = $outputIsCI ? ltrim(str_replace($rootDir->path()->real, '', $storage->path()->real), '/') : $storage->path()->filename;
