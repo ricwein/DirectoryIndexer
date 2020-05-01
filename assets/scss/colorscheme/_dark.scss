@@ -45,4 +45,9 @@ tr.clickableRow {
 
 .tingle-modal {
   background-color: transparent !important;
+
+  &:before {
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+  }
 }
