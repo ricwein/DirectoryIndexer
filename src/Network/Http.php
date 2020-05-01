@@ -344,20 +344,6 @@ class Http
     }
 
     /**
-     * @return RangeSet|null
-     */
-    protected function getRangeSet(): ?RangeSet
-    {
-        $byteRange = $this->get('HTTP_RANGE', static::SERVER, null);
-
-        if ($byteRange === null) {
-            return null;
-        }
-
-        return RangeSet::createFromHeader($byteRange);
-    }
-
-    /**
      * @param File $file
      * @param bool $forceDownload
      * @param string|null $asName
@@ -385,15 +371,15 @@ class Http
         }
 
         // full file request
-        $rangeSet = $this->getRangeSet();
-        $ranges = $rangeSet !== null ? $rangeSet->getRangesForSize($totalSize) : null;
-        if (null === $rangeSet || $ranges === null) {
+        if (null === $rangeSet = RangeSet::createFromHeader($this->get('HTTP_RANGE', static::SERVER, null))) {
             $headers['Content-Length'] = $totalSize;
             static::sendStatusHeader(200);
             static::sendHeaders($headers);
             $file->stream();
             exit(0);
         }
+
+        $ranges = $rangeSet->getRangesForSize($totalSize);
 
         // partial file request
         $headers['Content-Length'] = array_sum(array_map(fn(Range $range) => $range->getLength(), $ranges));

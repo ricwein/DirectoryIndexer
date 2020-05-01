@@ -37,7 +37,9 @@ Collect Logs:
     - docker
     - docker-compose
   script:
-    - docker-compose -f docker-compose.base.yml logs
+    - docker-compose -f docker-compose.base.yml logs redis
+    - docker-compose -f docker-compose.base.yml logs nginx
+    - docker-compose -f docker-compose.base.yml logs php-fpm
 
 Warmup Cache:
   stage: prepare
