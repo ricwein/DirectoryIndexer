@@ -14,6 +14,8 @@ Build:
     - docker-compose
   script:
     - docker-compose -f docker-compose.base.yml build --pull --parallel --force-rm --no-cache
+  except:
+    - schedules
 
 Deploy:
   stage: deploy
@@ -26,6 +28,8 @@ Deploy:
   script:
     - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE down
     - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE up -d --remove-orphans
+  except:
+    - schedules
 
 Collect Logs:
   stage: deploy
@@ -40,6 +44,8 @@ Collect Logs:
     - docker-compose -f docker-compose.base.yml logs redis
     - docker-compose -f docker-compose.base.yml logs nginx
     - docker-compose -f docker-compose.base.yml logs php-fpm
+  except:
+    - schedules
 
 Warmup Cache:
   stage: prepare

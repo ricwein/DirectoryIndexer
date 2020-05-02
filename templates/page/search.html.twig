@@ -35,11 +35,10 @@
         <table class="table is-hoverable is-fullwidth" id="index">
             <thead>
             <tr>
-                <th colspan="2" data-sort-column-key="name">Name</th>
+                <th colspan="3" data-sort-column-key="name">Name</th>
                 <th data-sort-column-key="type">Type</th>
                 <th data-sort-column-key="modified" data-sort-method='number'>Last Modified</th>
-                <th data-sort-column-key="size" data-sort-method='number'>Size</th>
-                <th data-sort-method='none'></th>
+                <th colspan="2" data-sort-column-key="size" data-sort-method='number'>Size</th>
             </tr>
             </thead>
 
@@ -55,7 +54,7 @@
                             <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
                         </td>
 
-                        <td data-sort-column-key="name" data-sort='{{ file.path().filepath }}/'>
+                        <td colspan="2" data-sort-column-key="name" data-sort='{{ file.path().filepath }}/'>
                             <nav class="breadcrumb path" aria-label="path">
                                 <ul>
                                     {% for (path, name) in iterate_path(file.path().filepath) %}
@@ -107,6 +106,11 @@
                                     {% endfor %}
                                 </ul>
                             </nav>
+                        </td>
+                        <td>
+                            <a class="is-pulled-right button is-black is-light" href="{{ url.base }}/{{ file.path().filepath | url_encode }}?download">
+                                <i class="fas fa-download"></i>
+                            </a>
                         </td>
 
                         <td data-sort-column-key="type">

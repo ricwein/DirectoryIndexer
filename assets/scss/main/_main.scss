@@ -6,9 +6,22 @@ a {
   }
 }
 
-.button.is-accent {
-  background-color: var(--main-accent-color);
-  color: var(--main-bg-color);
+.button {
+  &.is-accent {
+    background-color: var(--main-accent-color);
+    color: var(--main-bg-color);
+  }
+
+  &.is-black.is-light {
+    background-color: transparent;
+    border-color: transparent;
+    transition: background-color 0.1s ease-in-out, color 0.05s ease-in-out;
+
+    &:hover {
+      background-color: var(--main-fg-color);
+      color: var(--main-bg-color);
+    }
+  }
 }
 
 .panel {
