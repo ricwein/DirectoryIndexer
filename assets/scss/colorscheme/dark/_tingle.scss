@@ -2,9 +2,9 @@
 
 .tingle-modal-box {
   color: $color-dark-foreground;
-  background-color: mix(darkslategray, $color-dark-background, 0.5) !important;
+  background-color: mix(dimgray, $color-dark-background, 0.1) !important;
 
   .tingle-modal-box__footer {
-    background-color: mix(dimgray, $color-dark-background, 0.5) !important;
+    background-color: mix(dimgray, $color-dark-background, 0.3) !important;
   }
 }

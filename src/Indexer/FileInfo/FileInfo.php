@@ -27,10 +27,7 @@ class FileInfo
 
     private Storage\Disk $storage;
     private ?Cache $cache;
-    private int $constraints;
-    private Config $config;
-    private Directory $rootDir;
-    private ?MetaData $metaData;
+    private MetaData $metaData;
 
     /**
      * FileInfo constructor.
@@ -46,11 +43,8 @@ class FileInfo
     {
         $this->storage = $storage;
         $this->cache = $cache;
-        $this->rootDir = $rootDir;
-        $this->constraints = $constraints;
-        $this->config = $config;
 
-        $this->metaData = $cache !== null ? MetaData::fromCache($storage, $cache) : null;
+        $this->metaData = new MetaData($storage->setConstraints($constraints), $cache, $rootDir, $config);
     }
 
     public function isCached(): bool
@@ -65,44 +59,20 @@ class FileInfo
      * @throws Exception
      * @throws RuntimeException
      * @throws UnexpectedValueException
+     * @throws UnsupportedException
      */
     public function getInfo(): array
     {
-        $metaData = $this->getMetaData();
+        $metaData = $this->meta();
         return $this->formatMetaData($metaData);
     }
 
     /**
      * @return MetaData
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws Exception
-     * @throws RuntimeException
-     * @throws UnexpectedValueException
      */
-    public function getMetaData(): MetaData
+    public function meta(): MetaData
     {
-        if ($this->metaData !== null) {
-            return $this->metaData;
-        }
-
-        return $this->refreshMetaData();
-    }
-
-    /**
-     * @return MetaData
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws Exception
-     * @throws RuntimeException
-     * @throws UnexpectedValueException
-     */
-    public function refreshMetaData(): MetaData
-    {
-        $metaData = MetaData::fromStorage($this->storage->setConstraints($this->constraints), $this->rootDir, $this->config);
-        $metaData->saveToCache($this->cache);
-        $this->metaData = $metaData;
-        return $metaData;
+        return $this->metaData;
     }
 
     /**
@@ -125,13 +95,9 @@ class FileInfo
         );
     }
 
-    public function canHasThumbnail(): bool
+    public function supportsThumbnail(): bool
     {
-        if ($this->metaData !== null) {
-            return $this->metaData->supportsThumbnail;
-        }
-
-        return MetaData::canHasThumbnail($this->storage);
+        return $this->meta()->supportsThumbnail();
     }
 
     /**
@@ -142,7 +108,7 @@ class FileInfo
      */
     public function getThumbnail(): ?File\Image
     {
-        if (!$this->canHasThumbnail()) {
+        if (!$this->supportsThumbnail()) {
             return null;
         }
 
@@ -169,30 +135,40 @@ class FileInfo
         return $thumbnail;
     }
 
+    /**
+     * @param MetaData $metaData
+     * @return array
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     */
     private function formatMetaData(MetaData $metaData): array
     {
         return [
-            'filename' => $metaData->name,
-            'hidden' => $metaData->isHidden,
-            'isDir' => $metaData->isDir,
+            'filename' => $metaData->filename(),
+            'hidden' => $metaData->isHidden(),
+            'isDir' => $metaData->isDir(),
             'type' => [
-                'name' => $metaData->type,
-                'mime' => $metaData->mimeType,
-                'icon' => $metaData->faIcon,
+                'name' => $metaData->type(),
+                'mime' => $metaData->mimeType(),
+                'icon' => $metaData->faIcon(),
             ],
             'size' => [
-                'bytes' => $metaData->size,
-                'hr' => (new CoreFunctions(new TemplateConfig))->formatBytes($metaData->size, 1),
+                'bytes' => $metaData->size(),
+                'hr' => (new CoreFunctions(new TemplateConfig))->formatBytes($metaData->size(), 1),
             ],
             'hash' => [
-                'md5' => $metaData->hashMD5,
-                'sha1' => $metaData->hashSHA1,
-                'sha256' => $metaData->hashSHA256,
+                'md5' => $metaData->hashMD5(),
+                'sha1' => $metaData->hashSHA1(),
+                'sha256' => $metaData->hashSHA256(),
             ],
             'time' => [
-                'modified' => $metaData->timeLastModified,
-                'accessed' => $metaData->timeLastAccessed,
-                'created' => $metaData->timeCreated,
+                'modified' => $metaData->timeLastModified(),
+                'accessed' => $metaData->timeLastAccessed(),
+                'created' => $metaData->timeCreated(),
             ]
         ];
     }

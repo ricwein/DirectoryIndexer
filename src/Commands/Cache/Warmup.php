@@ -172,7 +172,7 @@ class Warmup extends Command
                 $fileInfo = new FileInfo($storage, $cache, $config, $rootDir, $rootDir->storage()->getConstraints());
 
                 // fetch and calculate file metadata
-                $fileInfo->getMetaData();
+                $fileInfo->meta()->updateAllAttributes();
 
                 // try to create thumbnail if possible
                 $fileInfo->getThumbnail();

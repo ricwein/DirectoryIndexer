@@ -46,9 +46,9 @@
                 </a>
             {% endif %}
 
-            {% set dirInfo = get_file_info(index.dir().storage()) %}
+            {% set dirMetaData = get_file_info(index.dir().storage()).meta() %}
 
-            {% if config.indexRoot or not(index.isRoot()) or dirInfo.isCached() %}
+            {% if config.indexRoot or not(index.isRoot()) or dirMetaData.isCached('size') %}
                 <a class="button is-link is-light view-modal-info hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | url_encode }}?info" aria-label="View Info">
                     <i class="fas fa-eye"></i>
                 </a>
@@ -67,7 +67,7 @@
 
 {% block main %}
     <div class="container is-fluid index">
-        <table class="table is-hoverable is-fullwidth" id="index">
+        <table class="table container-table is-hoverable is-fullwidth" id="index">
             <thead>
             <tr>
                 <th colspan="2" data-sort-column-key="name">Name</th>
@@ -93,16 +93,16 @@
                 </tr>
             {% endif %}
 
-            {% set dirInfo = get_file_info(index.dir().storage()) %}
+            {% set dirMetaData = get_file_info(index.dir().storage()).meta() %}
 
             {% for file in index.list() %}
-                {% set fileInfo = get_file_info(file.storage()) %}
+                {% set fileMetaData = get_file_info(file.storage()).meta() %}
 
                 {% if file.isDir() %}
 
                     <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().basename | url_encode }}">
                         <td>
-                            <i class="thumbnail {{ fileInfo.getMetaData().faIcon }}"></i>
+                            <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().basename }}/'>
@@ -112,19 +112,19 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            {{ fileInfo.getMetaData().type }}
+                            {{ fileMetaData.type() }}
                         </td>
 
                         <td data-sort-column-key="modified" data-sort='{{ file.getTime() }}'>
                             {{ file.getTime() | date('d.m.Y H:i:s') }}
                         </td>
 
-                        {% if fileInfo.isCached() %}
-                            <td data-sort-column-key="size" data-sort='{{ fileInfo.getMetaData().size }}'>
-                                {{ fileInfo.getMetaData().size | format_bytes(1) }}
+                        {% if fileMetaData.isCached('size') %}
+                            <td data-sort-column-key="size" data-sort='{{ fileMetaData.size() }}'>
+                                {{ fileMetaData.size() | format_bytes(1) }}
 
-                                {% if dirInfo.isCached() %}
-                                    <progress class="progress is-accent is-small" value="{{ fileInfo.getMetaData().size }}" max="{{ dirInfo.getInfo().size.bytes }}">TODO%</progress>
+                                {% if dirMetaData.isCached('size') %}
+                                    <progress class="progress is-accent is-small" value="{{ fileMetaData.size() }}" max="{{ dirMetaData.size() }}">TODO%</progress>
                                 {% endif %}
                             </td>
                         {% else %}
@@ -142,10 +142,10 @@
 
                     <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
                         <td>
-                            {% if fileInfo.canHasThumbnail() %}
+                            {% if fileMetaData.supportsThumbnail() %}
                                 <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
                             {% else %}
-                                <i class="thumbnail {{ fileInfo.getMetaData().faIcon }}"></i>
+                                <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
                             {% endif %}
                         </td>
 
@@ -159,20 +159,19 @@
                         </td>
 
                         <td data-sort-column-key="type">
-                            {{ fileInfo.getMetaData().type }}
+                            {{ fileMetaData.type() }}
                         </td>
 
-                        {% set mtime = (fileInfo.getMetaData().timeLastModified ?? file.getTime()) %}
+                        {% set mtime = (fileMetaData.timeLastModified() ?? file.getTime()) %}
                         <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
                             {{ mtime | date('d.m.Y H:i:s') }}
                         </td>
 
-                        {% set filesize = (fileInfo.getMetaData().size ?? file.getSize()) %}
-                        <td data-sort-column-key="size" data-sort='{{ filesize }}'>
-                            {{ filesize | format_bytes(1) }}
+                        <td data-sort-column-key="size" data-sort='{{ fileMetaData.size() }}'>
+                            {{ fileMetaData.size() | format_bytes(1) }}
 
-                            {% if dirInfo.isCached() %}
-                                <progress class="progress is-accent is-small" value="{{ filesize }}" max="{{ dirInfo.getMetaData().size }}">TODO%</progress>
+                            {% if dirMetaData.isCached('size') %}
+                                <progress class="progress is-accent is-small" value="{{ fileMetaData.size() }}" max="{{ dirMetaData.size() }}">TODO%</progress>
                             {% endif %}
                         </td>
 
@@ -198,7 +197,7 @@
         {% set readmeFile = index.dir().file('README.md') %}
         {% if readmeFile.isFile() %}
             {% block readme %}
-                {% cache 'readme_md_' ~ readmeFile.path().real %}
+                {% cache 'readme_md_' ~ readmeFile.path().real ~ '_' ~ readmeFile.getTime() %}
                     <div class="container">
                         <nav class="panel is-accent">
                             <p class="panel-heading">

@@ -189,7 +189,7 @@ class Renderer
         $assetFile = $assetDir->file($assetFilename);
 
         $headers = [
-            'Content-Type' => $assetFile->getType(true),
+            'Content-Type' => $assetFile->storage()->getFileType(true),
         ];
         if ($this->config->development) {
             $headers += [

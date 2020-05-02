@@ -1,6 +1,6 @@
 <?php
 
-/** @noinspection UnusedConstructorDependenciesInspection */
+/** @noinspection ClassMethodNameMatchesFieldNameInspection */
 
 namespace ricwein\Indexer\Indexer\FileInfo;
 
@@ -12,6 +12,7 @@ use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\Exception;
 use ricwein\FileSystem\Exceptions\RuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
+use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Core\Cache;
@@ -20,124 +21,112 @@ use ricwein\Indexer\Indexer\PathIgnore;
 /**
  * Class MetaData
  * @package ricwein\Indexer\Indexer\FileInfo
- * @property-read $cacheKey string
- * @property-read $name string
- * @property-read $supportsThumbnail bool
- * @property-read $isDir bool
- * @property-read $mimeType string|null
- * @property-read $type string
- * @property-read $faIcon string
- * @property-read $size int
- * @property-read $timeLastModified int
- * @property-read $timeLastAccessed int
- * @property-read $timeCreated int
- * @property-read $hashMD5 string|null
- * @property-read $hashSHA1 string|null
- * @property-read $hashSHA256 string|null
- * @property-read $isHidden bool
  */
 class MetaData
 {
-    private string $cacheKey;
+    private bool $wasUpdated = false;
+    private ?string $cacheKey = null;
+    private Directory $rootDir;
+    private ?Cache $cache;
+    private Config $config;
+    private Storage\Disk $storage;
 
     private string $name;
 
     private bool $supportsThumbnail;
     private bool $isDir;
 
-    private ?string $mimeType;
-    private string $type;
-    private string $faIcon;
+    private ?string $mimeType; // expensive
+    private ?string $type; // expensive
+    private ?string $faIcon; // expensive
 
-    private int $size;
+    private ?int $size; // expensive (for dirs)
     private int $timeLastModified;
     private int $timeLastAccessed;
     private int $timeCreated;
 
-    private ?string $hashMD5;
-    private ?string $hashSHA1;
-    private ?string $hashSHA256;
+    private ?string $hashMD5; // expensive
+    private ?string $hashSHA1; // expensive
+    private ?string $hashSHA256; // expensive
 
-    private bool $isHidden;
-
-    private function __construct(string $cacheKey, string $name, bool $supportsThumbnail, bool $isDir, ?string $mimeType, string $type, string $faIcon, int $size, int $timeLastModified, int $timeLastAccessed, int $timeCreated, ?string $hashMD5, ?string $hashSHA1, ?string $hashSHA256, bool $isHidden)
-    {
-        $this->cacheKey = $cacheKey;
-
-        $this->name = $name;
-
-        $this->supportsThumbnail = $supportsThumbnail;
-        $this->isDir = $isDir;
-
-        $this->mimeType = $mimeType;
-        $this->type = $type;
-        $this->faIcon = $faIcon;
-
-        $this->size = $size;
-        $this->timeLastModified = $timeLastModified;
-        $this->timeLastAccessed = $timeLastAccessed;
-        $this->timeCreated = $timeCreated;
-
-        $this->hashMD5 = $hashMD5;
-        $this->hashSHA1 = $hashSHA1;
-        $this->hashSHA256 = $hashSHA256;
-
-        $this->isHidden = $isHidden;
-    }
+    private ?bool $isHidden; // expensive
 
     /**
      * @param Storage\Disk $storage
-     * @param Cache $cache
-     * @return MetaData|null
-     * @throws RuntimeException
-     * @throws UnexpectedValueException
-     */
-    public static function fromCache(Storage\Disk $storage, Cache $cache): ?MetaData
-    {
-        $cacheKey = static::buildCacheKey($storage);
-        $cacheItem = $cache->getItem($cacheKey);
-        if (!$cacheItem->isHit()) {
-            return null;
-        }
-
-        return $cacheItem->get();
-    }
-
-    /**
-     * @param Storage\Disk $storage
+     * @param Cache|null $cache
      * @param Directory $rootDir
      * @param Config $config
-     * @return MetaData
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws Exception
      * @throws RuntimeException
      * @throws UnexpectedValueException
+     * @noinspection PhpFieldAssignmentTypeMismatchInspection
      */
-    public static function fromStorage(Storage\Disk $storage, Directory $rootDir, Config $config): MetaData
+    public function __construct(Storage\Disk $storage, ?Cache $cache, Directory $rootDir, Config $config)
     {
-        $isDir = $storage->isDir();
-        $pathIgnore = new PathIgnore($rootDir, $config);
+        $cachedAttributes = [];
+        if ($cache !== null) {
 
-        [$type, $icon, $mime] = static::typeFromStorage($storage, $rootDir);
+            $this->cacheKey = static::buildCacheKey($storage);
+            $cacheItem = $cache->getItem($this->cacheKey);
 
-        return new self(
-            static::buildCacheKey($storage),
-            $isDir ? $storage->path()->basename : $storage->path()->filename,
-            static::canHasThumbnail($storage),
-            $isDir,
-            $mime,
-            $type,
-            $icon,
-            $isDir ? (new Directory($storage, $rootDir->storage()->getConstraints()))->getSize() : $storage->getSize(),
-            $storage->getTime(Time::LAST_MODIFIED),
-            $storage->getTime(Time::LAST_ACCESSED),
-            $storage->getTime(Time::CREATED),
-            $isDir ? null : $storage->getFileHash(Hash::CONTENT, 'md5'),
-            $isDir ? null : $storage->getFileHash(Hash::CONTENT, 'sha1'),
-            $isDir ? null : $storage->getFileHash(Hash::CONTENT, 'sha256'),
-            $pathIgnore->isHiddenStorage($storage),
-        );
+            if ($cacheItem->isHit()) {
+                $cachedAttributes = (array)$cacheItem->get();
+            } else {
+                $this->wasUpdated = true;
+            }
+        }
+
+        $isDir = $cachedAttributes['isDir'] ?? $storage->isDir();
+        $size = $cachedAttributes['size'] ?? (!$isDir ? $storage->getSize() : null);
+
+        // init attributes
+        $this->storage = $storage;
+        $this->cache = $cache;
+        $this->rootDir = $rootDir;
+        $this->config = $config;
+
+        $this->name = $cachedAttributes['name'] ?? ($isDir ? $storage->path()->basename : $storage->path()->filename);
+        $this->supportsThumbnail = $cachedAttributes['supportsThumbnail'] ?? static::canHasThumbnail($storage);
+        $this->isDir = $isDir;
+
+        $this->mimeType = $cachedAttributes['mimeType'] ?? null;
+        $this->type = $cachedAttributes['type'] ?? null;
+        $this->faIcon = $cachedAttributes['faIcon'] ?? null;
+
+        $this->size = $size;
+
+        $this->timeLastModified = $cachedAttributes['timeLastModified'] ?? $storage->getTime(Time::LAST_MODIFIED);
+        $this->timeLastAccessed = $cachedAttributes['timeLastAccessed'] ?? $storage->getTime(Time::LAST_ACCESSED);
+        $this->timeCreated = $cachedAttributes['timeCreated'] ?? $storage->getTime(Time::CREATED);
+
+        $this->hashMD5 = $cachedAttributes['hashMD5'] ?? null;
+        $this->hashSHA1 = $cachedAttributes['hashSHA1'] ?? null;
+        $this->hashSHA256 = $cachedAttributes['hashSHA256'] ?? null;
+
+        $this->isHidden = $cachedAttributes['isHidden'] ?? null;
+    }
+
+    public function isCached(string $name): bool
+    {
+        switch ($name) {
+            case 'hashMD5':
+                return $this->isDir || $this->hashMD5 !== null;
+
+            case 'hashSHA1':
+                return $this->isDir || $this->hashSHA1 !== null;
+
+            case 'hashSHA256':
+                return $this->isDir || $this->hashSHA256 !== null;
+
+            default:
+                return property_exists($this, $name) && $this->$name !== null;
+        }
+    }
+
+    public function __destruct()
+    {
+        if ($this->wasUpdated) {
+            $this->updateCache();
+        }
     }
 
     public static function canHasThumbnail(Storage\Disk $storage): bool
@@ -145,7 +134,6 @@ class MetaData
         $extension = strtolower($storage->path()->extension);
         return in_array($extension, ['png', 'gif', 'bmp', 'jpg', 'jpeg'], true);
     }
-
 
     /**
      * @param Storage\Disk $storage
@@ -162,41 +150,239 @@ class MetaData
         );
     }
 
-    /**
-     * @param Cache $cache
-     * @return bool
-     */
-    public function saveToCache(Cache $cache): bool
+    public function updateCache(): bool
     {
-        $cacheItem = $cache->getItem($this->cacheKey);
-        $cacheItem->set($this);
+        if ($this->cache === null || $this->cacheKey === null || null === $cacheItem = $this->cache->getItem($this->cacheKey)) {
+            return true;
+        }
+
+        $this->wasUpdated = false;
+
+        $cacheItem->set($this->getCacheableAttributes());
         $cacheItem->expiresAfter(FileInfo::CACHE_DURATION);
-        return $cache->save($cacheItem);
+        return $this->cache->save($cacheItem);
     }
 
-    public function asArray(): array
+    private function getCacheableAttributes(): array
     {
-        return get_object_vars($this);
+        return [
+            'name' => $this->name,
+            'supportsThumbnail' => $this->supportsThumbnail,
+            'isDir' => $this->isDir,
+            'mimeType' => $this->mimeType,
+            'type' => $this->type,
+            'faIcon' => $this->faIcon,
+            'size' => $this->size,
+            'timeLastModified' => $this->timeLastModified,
+            'timeLastAccessed' => $this->timeLastAccessed,
+            'timeCreated' => $this->timeCreated,
+            'hashMD5' => $this->hashMD5,
+            'hashSHA1' => $this->hashSHA1,
+            'hashSHA256' => $this->hashSHA256,
+            'isHidden' => $this->isHidden,
+        ];
     }
 
-    public function __get(string $name)
+    public function filename(): string
     {
-        return $this->$name ?? null;
+        return $this->name;
+    }
+
+    public function supportsThumbnail(): bool
+    {
+        return $this->supportsThumbnail;
+    }
+
+    public function isDir(): bool
+    {
+        return $this->isDir;
     }
 
     /**
-     * @param $name
-     * @param $value
-     * @throws \RuntimeException
+     * @return string|null
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
      */
-    public function __set($name, $value)
+    public function mimeType(): ?string
     {
-        throw new \RuntimeException("Setting files metadata attributes ('{$name}') as class-properties is only support in the constructor.", 500);
+        if (!isset($this->type)) {
+            [$this->type, $this->faIcon, $this->mimeType] = static::typeFromStorage($this->storage, $this->rootDir);
+            $this->wasUpdated = true;
+        }
+
+        return $this->mimeType;
     }
 
-    public function __isset(string $name)
+    /**
+     * @return string
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function faIcon(): string
     {
-        return isset($this->$name);
+        if (!isset($this->faIcon)) {
+            [$this->type, $this->faIcon, $this->mimeType] = static::typeFromStorage($this->storage, $this->rootDir);
+            $this->wasUpdated = true;
+        }
+
+        return $this->faIcon;
+    }
+
+    /**
+     * @return string
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function type(): string
+    {
+        if (!isset($this->type)) {
+            [$this->type, $this->faIcon, $this->mimeType] = static::typeFromStorage($this->storage, $this->rootDir);
+            $this->wasUpdated = true;
+        }
+
+        return $this->type;
+    }
+
+    /**
+     * @return int
+     * @throws AccessDeniedException
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     */
+    public function size(): int
+    {
+        if (!isset($this->size)) {
+            $this->size = $this->isDir ? (new Directory($this->storage, $this->rootDir->storage()->getConstraints()))->getSize() : $this->storage->getSize();
+            $this->wasUpdated = true;
+        }
+
+        return $this->size;
+    }
+
+    public function timeLastModified(): int
+    {
+        return $this->timeLastModified;
+    }
+
+    public function timeLastAccessed(): int
+    {
+        return $this->timeLastAccessed;
+    }
+
+    public function timeCreated(): int
+    {
+        return $this->timeCreated;
+    }
+
+    /**
+     * @return string|null
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function hashMD5(): ?string
+    {
+        if ($this->isDir) {
+            return null;
+        }
+
+        if (!isset($this->hashMD5)) {
+            $this->hashMD5 = $this->storage->getFileHash(Hash::CONTENT, 'md5');
+            $this->wasUpdated = true;
+        }
+
+        return $this->hashMD5;
+    }
+
+    /**
+     * @return string|null
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function hashSHA1(): ?string
+    {
+        if ($this->isDir) {
+            return null;
+        }
+
+        if (!isset($this->hashSHA1)) {
+            $this->hashSHA1 = $this->storage->getFileHash(Hash::CONTENT, 'sha1');
+            $this->wasUpdated = true;
+        }
+
+        return $this->hashSHA1;
+    }
+
+    /**
+     * @return string|null
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function hashSHA256(): ?string
+    {
+        if ($this->isDir) {
+            return null;
+        }
+
+        if (!isset($this->hashSHA256)) {
+            $this->hashSHA256 = $this->storage->getFileHash(Hash::CONTENT, 'sha256');
+            $this->wasUpdated = true;
+        }
+
+        return $this->hashSHA256;
+    }
+
+    /**
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     */
+    public function isHidden(): bool
+    {
+        if (!isset($this->isHidden)) {
+            $this->isHidden = (new PathIgnore($this->rootDir, $this->config))->isHiddenStorage($this->storage);
+            $this->wasUpdated = true;
+        }
+        return $this->isHidden;
+    }
+
+    /**
+     * @return bool
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws Exception
+     * @throws RuntimeException
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     * @noinspection PhpFieldAssignmentTypeMismatchInspection
+     */
+    public function updateAllAttributes(): bool
+    {
+        $isDir = $this->storage->isDir();
+        $this->name = $isDir ? $this->storage->path()->basename : $this->storage->path()->filename;
+        $this->supportsThumbnail = static::canHasThumbnail($this->storage);
+        $this->isDir = $isDir;
+
+        [$this->type, $this->faIcon, $this->mimeType] = static::typeFromStorage($this->storage, $this->rootDir);
+
+        $this->size = $isDir ? (new Directory($this->storage, $this->rootDir->storage()->getConstraints()))->getSize() : $this->storage->getSize();
+
+        $this->timeLastModified = $this->storage->getTime(Time::LAST_MODIFIED);
+        $this->timeLastAccessed = $this->storage->getTime(Time::LAST_ACCESSED);
+        $this->timeCreated = $this->storage->getTime(Time::CREATED);
+
+        $this->hashMD5 = $isDir ? null : $this->storage->getFileHash(Hash::CONTENT, 'md5');
+        $this->hashSHA1 = $isDir ? null : $this->storage->getFileHash(Hash::CONTENT, 'sha1');
+        $this->hashSHA256 = $isDir ? null : $this->storage->getFileHash(Hash::CONTENT, 'sha256');
+
+        $this->isHidden = (new PathIgnore($this->rootDir, $this->config))->isHiddenStorage($this->storage);
+        $this->wasUpdated = true;
+
+        return $this->updateCache();
     }
 
     /**

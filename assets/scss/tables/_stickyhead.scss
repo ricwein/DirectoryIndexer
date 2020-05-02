@@ -1,5 +1,7 @@
 table {
   border-collapse: separate; /* Don't collapse */
+  overflow-x: scroll;
+
   th {
     position: -webkit-sticky;
     position: sticky;

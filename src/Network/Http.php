@@ -2,8 +2,11 @@
 
 namespace ricwein\Indexer\Network;
 
+use DaveRandom\Resume\InvalidRangeHeaderException;
 use DaveRandom\Resume\Range;
 use DaveRandom\Resume\RangeSet;
+use DaveRandom\Resume\UnsatisfiableRangeException;
+use Monolog\Logger;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
 use ricwein\FileSystem\Exceptions\FileNotFoundException;
@@ -112,10 +115,10 @@ class Http
             $result = [];
             foreach ($searchSources as $source) {
                 if (isset($this->core[$source])) {
-                    $result = array_merge($result, $this->core[$source]);
+                    $result[] = $this->core[$source];
                 }
             }
-            return $result;
+            return array_merge(...$result);
         }
 
         // search and return parameters from core-arrays
@@ -351,14 +354,13 @@ class Http
      * @throws ConstraintsException
      * @throws FileNotFoundException
      * @throws FileSystemRuntimeException
-     * @throws UnexpectedValueException
      */
     protected function streamFile(File $file, bool $forceDownload, ?string $asName = null): void
     {
         $totalSize = $file->getSize();
 
         $headers = [
-            'Content-Type' => $file->getType(false),
+            'Content-Type' => $file->storage()->getFileType(false),
             'Accept-Ranges' => 'bytes',
             'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
             'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
@@ -370,20 +372,26 @@ class Http
             $headers['Content-Disposition'] = ['attachment', "filename=\"{$filename}\""];
         }
 
-        // full file request
-        if (null === $rangeSet = RangeSet::createFromHeader($this->get('HTTP_RANGE', static::SERVER, null))) {
-            $headers['Content-Length'] = $totalSize;
-            static::sendStatusHeader(200);
-            static::sendHeaders($headers);
-            $file->stream();
-            exit(0);
-        }
+        try {
 
-        $ranges = $rangeSet->getRangesForSize($totalSize);
+            // simple file request
+            if (null === $rangeSet = RangeSet::createFromHeader($this->get('HTTP_RANGE', static::SERVER, null))) {
+                $headers['Content-Length'] = $totalSize;
+                static::sendStatusHeader(200);
+                static::sendHeaders($headers);
+                $file->stream();
+                exit(0);
+            }
+
+            $ranges = $rangeSet->getRangesForSize($totalSize);
+
+        } catch (UnsatisfiableRangeException|InvalidRangeHeaderException $exception) {
+            throw new RuntimeException("Invalid range: {$exception->getMessage()}", 416, $exception);
+        }
 
         // partial file request
         $headers['Content-Length'] = array_sum(array_map(fn(Range $range) => $range->getLength(), $ranges));
-        $headers['Content-Range'] = sprintf('%s %s/%s', $rangeSet->getUnit(), \implode(',', $ranges), $totalSize);
+        $headers['Content-Range'] = sprintf('%s %s/%s', $rangeSet->getUnit(), implode(',', $ranges), $totalSize);
         $headers['Content-Transfer-Encoding'] = 'binary';
         $headers['Content-Disposition'] ??= 'inline';
 

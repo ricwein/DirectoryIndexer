@@ -79,8 +79,8 @@ tr.clickableRow {
       width: 100%;
       border-radius: 0 !important;
       border: 0;
-      border-right: none;
-      border-left: none;
+      border-right: 1px solid transparent;
+      border-left: 1px solid transparent;
 
       &.is-accent {
         border-left-color: var(--main-accent-color);

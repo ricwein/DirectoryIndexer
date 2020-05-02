@@ -47,7 +47,7 @@ class Cache
     /**
      * @var ExtendedCacheItemPoolInterface
      */
-    protected ExtendedCacheItemPoolInterface $cache;
+    protected ?ExtendedCacheItemPoolInterface $cache = null;
 
     /**
      * @param string $engine cache-type
@@ -202,9 +202,9 @@ class Cache
     /**
      * @return ExtendedCacheItemPoolInterface
      */
-    public function getDriver(): ExtendedCacheItemPoolInterface
+    public function getDriver(): ?ExtendedCacheItemPoolInterface
     {
-        return $this->cache;
+        return $this->cache ?? null;
     }
 
     /**
@@ -214,6 +214,11 @@ class Cache
      */
     public function __call(string $name, array $arguments)
     {
+        // yes... the internal cache-adapter can be unset in runtime:
+        // e.g. while destructuring classes containing a cache-reference
+        if (!isset($this->cache)) {
+            return null;
+        }
 
         // execute method-call at cache-driver (itemPool)
         if (method_exists($this->cache, $name)) {
@@ -221,10 +226,6 @@ class Cache
         }
 
         // method not found
-        throw new RuntimeException(sprintf(
-            'Call to undefined Cache method %s::%s()',
-            $this->getDriver()->getDriverName(),
-            $name
-        ), 500);
+        throw new RuntimeException("Call to undefined Cache method {$this->cache->getDriverName()}::{$name}()", 500);
     }
 }
