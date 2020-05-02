@@ -13,6 +13,7 @@ use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Indexer\DirectoryList;
 use ricwein\Indexer\Indexer\FileInfo\FileInfo;
+use ricwein\Indexer\Indexer\FileInfo\MetaData;
 use ricwein\Indexer\Indexer\PathIgnore;
 use ricwein\Indexer\Indexer\Search;
 use ricwein\Indexer\Network\Http;
@@ -119,7 +120,7 @@ class Renderer
                 $regexReplaces = [
                     '/\>[^\S ]+/s' => '>', // strip whitespaces after tags, except space
                     '/[^\S ]+\</s' => '<', // strip whitespaces before tags, except space
-                    '/(\s)+/s' => '\\1', // shorten multiple whitespace sequences
+                    '/(\s)+/s' => '\\1', // shorten multiple whitespace sequencesget_file_info
                     '/<!--(.|\s)*?-->/' => '', // Remove HTML comments
                 ];
 
@@ -134,8 +135,8 @@ class Renderer
             $templater = new Templater($this->getTemplaterConfig(), $this->cache->getDriver());
             $templater->addFunction(new BaseFunction('asset', [$this, 'convertAssetURL']));
             $templater->addFunction(new BaseFunction('render_markdown', [$this, 'convertMarkdown']));
-            $templater->addFunction(new BaseFunction('get_file_info', function (Storage\Disk $storage): FileInfo {
-                return new FileInfo($storage, $this->cache, $this->config, $this->getRootDir(), $storage->getConstraints());
+            $templater->addFunction(new BaseFunction('get_file_metadata', function (Storage\Disk $storage): MetaData {
+                return new MetaData($storage, $this->cache, $this->getRootDir(), $this->config);
             }));
             $templater->addFunction(new BaseFunction('iterate_path', static function (string $path): array {
                 $dirs = explode('/', $path);

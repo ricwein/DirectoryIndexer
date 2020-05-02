@@ -46,7 +46,7 @@
                 </a>
             {% endif %}
 
-            {% set dirMetaData = get_file_info(index.dir().storage()).meta() %}
+            {% set dirMetaData = get_file_metadata(index.dir().storage()) %}
 
             {% if config.indexRoot or not(index.isRoot()) or dirMetaData.isCached('size') %}
                 <a class="button is-link is-light view-modal-info hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | url_encode }}?info" aria-label="View Info">
@@ -93,10 +93,10 @@
                 </tr>
             {% endif %}
 
-            {% set dirMetaData = get_file_info(index.dir().storage()).meta() %}
+            {% set dirMetaData = get_file_metadata(index.dir().storage()) %}
 
             {% for file in index.list() %}
-                {% set fileMetaData = get_file_info(file.storage()).meta() %}
+                {% set fileMetaData = get_file_metadata(file.storage()) %}
 
                 {% if file.isDir() %}
 

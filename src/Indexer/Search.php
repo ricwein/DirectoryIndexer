@@ -14,7 +14,6 @@ use ricwein\FileSystem\FileSystem;
 use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Core\Cache;
-use ricwein\Indexer\Indexer\FileInfo\FileInfo;
 use ricwein\Indexer\Indexer\FileInfo\MetaData;
 
 class Search
@@ -23,7 +22,6 @@ class Search
     private Index $index;
     private Config $config;
     private ?Cache $cache;
-    private PathIgnore $pathIgnore;
 
     /**
      * Search constructor.
@@ -37,7 +35,6 @@ class Search
         $this->cache = $cache;
         $this->config = $config;
         $this->index = new Index($rootDir, $config, $cache);
-        $this->pathIgnore = new PathIgnore($rootDir, $config);
     }
 
     /**
@@ -98,10 +95,8 @@ class Search
 
         // remove hidden storages (the index-list doesn't contain denied storages, but hidden ones are listed)
         $storages = array_filter($storages, function (Storage\Disk $storage): bool {
-            if (null !== $metadata = MetaData::fromCache($storage, $this->cache)) {
-                return !$metadata->isHidden;
-            }
-            return !$this->pathIgnore->isHiddenStorage($storage);
+            $metadata = new MetaData($storage, $this->cache, $this->rootDir, $this->config);
+            return !$metadata->isHidden();
         });
 
         $constraints = $this->rootDir->storage()->getConstraints();
@@ -149,17 +144,17 @@ class Search
         foreach ($this->index->list() as $filepath) {
 
             $storage = new Storage\Disk($this->rootDir->path()->real, $filepath);
-            $fileInfo = new FileInfo($storage, $this->cache, $this->config, $this->rootDir, $constraints);
+            $metaData = new MetaData($storage->setConstraints($constraints), $this->cache, $this->rootDir, $this->config);
 
-            if (!$fileInfo->isCached()) {
+            if (!$metaData->isCached('type')) {
                 continue;
             }
 
-            $mimeType = $fileInfo->getMetaData()->mimeType;
+            $mimeType = $metaData->mimeType();
 
             if ($mimeType !== null && !$storage->isDir() && stripos($mimeType, $type) !== false) {
                 $matchingFiles[] = $storage;
-            } elseif (!$mimeTypeOnly && stripos($fileInfo->getMetaData()->type, $type) !== false) {
+            } elseif (!$mimeTypeOnly && stripos($metaData->type(), $type) !== false) {
                 $matchingFiles[] = $storage;
             }
         }
@@ -176,7 +171,6 @@ class Search
      * @throws RuntimeException
      * @throws UnexpectedValueException
      * @throws UnsupportedException
-     * @throws ConstraintsException
      */
     private function searchHash(string $hash, ?string $algo): array
     {
@@ -191,18 +185,22 @@ class Search
                 continue;
             }
 
-            $fileInfo = new FileInfo($storage, $this->cache, $this->config, $this->rootDir, $constraints);
+            $metaData = new MetaData($storage->setConstraints($constraints), $this->cache, $this->rootDir, $this->config);
 
-            if (!$fileInfo->isCached()) {
+            if (!$metaData->isCached('hashSHA256')) {
                 continue;
             }
 
-            $metaData = $fileInfo->getMetaData();
-
             switch (true) {
-                case ($algo === null || $algo === 'md5') && stripos($metaData->hashMD5, $hash) !== false:
-                case ($algo === null || $algo === 'sha1') && stripos($metaData->hashSHA1, $hash) !== false:
-                case ($algo === null || $algo === 'sha256') && stripos($metaData->hashSHA256, $hash) !== false:
+                case $algo === null && (!$metaData->isCached('hashMD5') && !$metaData->isCached('hashSHA1') && !$metaData->isCached('hashSHA256')):
+                case $algo === 'md5' && !$metaData->isCached('hashMD5'):
+                case $algo === 'sha1' && !$metaData->isCached('hashSHA1'):
+                case $algo === 'sha256' && !$metaData->isCached('hashSHA256'):
+                    continue 2;
+
+                case ($algo === null || $algo === 'md5') && stripos($metaData->hashMD5(), $hash) !== false:
+                case ($algo === null || $algo === 'sha1') && stripos($metaData->hashSHA1(), $hash) !== false:
+                case ($algo === null || $algo === 'sha256') && stripos($metaData->hashSHA256(), $hash) !== false:
                     $matchingFiles[] = $storage;
                     break;
             }
