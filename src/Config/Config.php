@@ -17,6 +17,7 @@ use ricwein\Templater\Exceptions\UnexpectedValueException;
  * @property-read bool development
  * @property-read bool indexRoot
  * @property-read bool docker
+ * @property-read string sortBy supported: dynamic (default), last_modified, name
  * @property-read string|null path
  * @property-read array defaultIndexIgnore
  * @property-read array imports
@@ -47,6 +48,7 @@ class Config
 
         'defaultIndexIgnore' => [],
         'indexRoot' => false,
+        'sortBy' => 'dynamic',
 
         'imports' => [
             ['resource' => 'config.json'],
@@ -182,6 +184,10 @@ class Config
 
                 case 'INDEX_PATH':
                     $this->config['path'] = (string)$value;
+                    break;
+
+                case 'INDEX_SORT_BY':
+                    $this->config['sortBy'] = (string)$value;
                     break;
 
                 case 'INDEX_DOCKER':
