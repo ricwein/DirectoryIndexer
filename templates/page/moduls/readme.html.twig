@@ -1,0 +1,16 @@
+{% block readme %}
+    {% cache 'readme_md_' ~ readmeFile.path().real ~ '_' ~ readmeFile.getTime() %}
+        <div class="container">
+            <nav class="panel is-accent">
+                <p class="panel-heading">
+                    {{ readmeFile.path().filename }}
+                </p>
+                <div class="panel-block">
+                    <div class="content">
+                        {{ readmeFile.read() | render_markdown(url.current) }}
+                    </div>
+                </div>
+            </nav>
+        </div>
+    {% endcache %}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% block highlight %}
+    <div class="tile is-ancestor is-vertical">
+
+        <div class="tile">
+
+            {% for file in index.listHighlights() %}
+            {% set fileMetaData = get_file_metadata(file.storage()) %}
+
+            {# highlight item container #}
+            <div class="tile is-parent">
+                <a
+                    class="tile is-child notification is-black is-light item-preview"
+                    href="{{ url.current }}/{{ file.path().filename | url_encode }}"
+                    style="background-image: url('{{ url.current }}/{{ file.path().filename | url_encode }}')"
+                >
+                    <div class="content">
+                        <p class="title">{{ file.path().basename }}</p>
+                        <p class="subtitle">{{ file.path().extension | lower }} • {{ fileMetaData.size() | format_bytes(1) }}</p>
+                    </div>
+                </a>
+            </div>
+
+            {# end current row and start a new one #}
+            {% if (loop.index % 3) == 0 and not(loop.last) %}
+                </div><div class="tile">
+            {% endif %}
+
+            {% endfor %}
+
+        </div>
+    </div>
+{% endblock %}

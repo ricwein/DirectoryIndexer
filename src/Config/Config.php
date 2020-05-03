@@ -18,6 +18,7 @@ use ricwein\Templater\Exceptions\UnexpectedValueException;
  * @property-read bool indexRoot
  * @property-read bool docker
  * @property-read string sortBy supported: dynamic (default), last_modified, name
+ * @property-read int highlights
  * @property-read string|null path
  * @property-read array defaultIndexIgnore
  * @property-read array imports
@@ -49,6 +50,7 @@ class Config
         'defaultIndexIgnore' => [],
         'indexRoot' => false,
         'sortBy' => 'dynamic',
+        'highlights' => 0,
 
         'imports' => [
             ['resource' => 'config.json'],
@@ -126,11 +128,22 @@ class Config
         $this->resolvePaths();
     }
 
-    private static function toBool($value): ?bool
+    /**
+     * @param $value
+     * @param string $name
+     * @return bool
+     * @throws UnexpectedValueException
+     */
+    private static function toBool($value, string $name): bool
     {
         if (is_bool($value)) {
             return $value;
         }
+
+        if (is_int($value)) {
+            return $value !== 0;
+        }
+
 
         if (is_string($value)) {
             if (in_array(strtolower($value), ['true', 'on', 'yes', '1'], true)) {
@@ -140,15 +153,9 @@ class Config
             if (in_array(strtolower($value), ['false', 'off', 'no', '0'], true)) {
                 return false;
             }
-
-            return null;
         }
 
-        if (is_int($value)) {
-            return $value !== 0;
-        }
-
-        return null;
+        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
     }
 
     /**
@@ -166,20 +173,14 @@ class Config
                     break;
 
                 case 'INDEX_INDEX_ROOT':
-                    if (null === $boolVal = static::toBool($value)) {
-                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
-                    }
-                    $this->config['indexRoot'] = $boolVal;
+                    $this->config['indexRoot'] = static::toBool($value, $name);
                     break;
 
                 case 'INDEX_DEVELOPMENT':
                 case 'INDEX_DEBUG':
                 case 'DEVELOPMENT':
                 case 'DEBUG':
-                    if (null === $boolVal = static::toBool($value)) {
-                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
-                    }
-                    $this->config['development'] = $boolVal;
+                    $this->config['development'] = static::toBool($value, $name);
                     break;
 
                 case 'INDEX_PATH':
@@ -190,11 +191,13 @@ class Config
                     $this->config['sortBy'] = (string)$value;
                     break;
 
+                case 'INDEX_SHOW_HIGHLIGHTS':
+                case 'INDEX_HIGHLIGHTS':
+                    $this->config['highlights'] = (int)$value;
+                    break;
+
                 case 'INDEX_DOCKER':
-                    if (null === $boolVal = static::toBool($value)) {
-                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
-                    }
-                    $this->config['docker'] = $boolVal;
+                    $this->config['docker'] = static::toBool($value, $name);
                     break;
 
                 case 'INDEX_IMPORTS':
@@ -202,10 +205,7 @@ class Config
                     break;
 
                 case 'INDEX_CACHE_ENABLED':
-                    if (null === $boolVal = static::toBool($value)) {
-                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
-                    }
-                    $this->config['cache']['enabled'] = (bool)$boolVal;
+                    $this->config['cache']['enabled'] = static::toBool($value, $name);
                     break;
 
                 case 'INDEX_CACHE_ENGINE':
@@ -219,10 +219,7 @@ class Config
 
                 case 'INDEX_STRIP_COMMENTS':
                 case 'INDEX_REMOVE_COMMENTS':
-                    if (null === $boolVal = static::toBool($value)) {
-                        throw new UnexpectedValueException(sprintf('Invalid value for environment variable "%s", expected type bool but got %s', $name, gettype($value)), 500);
-                    }
-                    $this->config['views']['removeComments'] = $boolVal;
+                    $this->config['views']['removeComments'] = static::toBool($value, $name);
                     break;
 
                 case 'INDEX_THEME':

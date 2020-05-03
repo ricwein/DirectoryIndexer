@@ -74,6 +74,7 @@ tr.clickableRow {
   td {
     border-left: 0.1rem solid transparent;
     border-right: 0.1rem solid transparent;
+    border-radius: 0;
 
     progress {
       width: 100%;
@@ -87,17 +88,6 @@ tr.clickableRow {
       }
     }
   }
-
-  td:first-of-type {
-    border-top-left-radius: 0.3rem;
-    border-bottom-left-radius: 0.3rem;
-  }
-
-  td:last-of-type {
-    border-top-right-radius: 0.3rem;
-    border-bottom-right-radius: 0.3rem;
-  }
-
 
   &:target {
     opacity: 0.8;
@@ -114,6 +104,18 @@ tr.clickableRow {
     transition: transform 0.05s ease-in-out;
 
     td {
+
+      &:first-of-type {
+        border-top-left-radius: 0.3rem;
+        border-bottom-left-radius: 0.3rem;
+      }
+
+      &:last-of-type {
+        border-top-right-radius: 0.3rem;
+        border-bottom-right-radius: 0.3rem;
+      }
+
+
       color: var(--main-bg-color);
 
       // enforce color on breadcrumbs pseudo elements slashes

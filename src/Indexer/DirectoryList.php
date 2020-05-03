@@ -2,9 +2,10 @@
 
 namespace ricwein\Indexer\Indexer;
 
-use Generator;
 use ricwein\FileSystem\Enum\Time;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
+use ricwein\FileSystem\Exceptions\FileNotFoundException;
+use ricwein\FileSystem\File;
 use ricwein\FileSystem\FileSystem;
 use ricwein\Indexer\Config\Config;
 use ricwein\FileSystem\Directory;
@@ -12,7 +13,6 @@ use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\Exception;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
-use ricwein\FileSystem\Storage;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\Templater\Exceptions\RuntimeException;
 use SplFileInfo;
@@ -22,13 +22,20 @@ class DirectoryList
     private Directory $directory;
     private Directory $rootDir;
     private PathIgnore $pathIgnore;
-    private Config $config;
+    /**
+     * @var array<Directory|File>
+     */
+    private array $files = [];
 
     /**
      * Indexer constructor.
      * @param Directory $rootDir
      * @param Directory $dir
      * @param Config $config
+     * @throws AccessDeniedException
+     * @throws Exception
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
      */
     public function __construct(Directory $rootDir, Directory $dir, Config $config)
     {
@@ -37,6 +44,68 @@ class DirectoryList
         $this->config = $config;
 
         $this->pathIgnore = new PathIgnore($this->rootDir, $config);
+
+        $this->files = $this->generateFileList();
+
+    }
+
+    /**
+     * @return array
+     * @throws AccessDeniedException
+     * @throws Exception
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     */
+    private function generateFileList(): array
+    {
+        $iterator = $this->directory
+            ->list(false)
+            ->filterPath([$this, 'filterFileIndex']);
+
+        switch (strtolower($this->config->sortBy)) {
+
+            case 'dynamic':
+                return array_merge(
+                    iterator_to_array($iterator->dirs()),
+                    iterator_to_array($iterator->files())
+                );
+
+            case 'lastmodified':
+            case 'last_modified':
+                $files = iterator_to_array($iterator->all());
+                usort($files, static function (FileSystem $fileA, FileSystem $fileB): int {
+                    return $fileB->getTime(Time::LAST_MODIFIED) - $fileA->getTime(Time::LAST_MODIFIED);
+                });
+                return $files;
+
+            case 'created':
+                $files = iterator_to_array($iterator->all());
+                usort($files, static function (FileSystem $fileA, FileSystem $fileB): int {
+                    return $fileB->getTime(Time::CREATED) - $fileA->getTime(Time::CREATED);
+                });
+                return $files;
+
+            case 'name':
+                $files = iterator_to_array($iterator->all());
+                usort($files, static function (FileSystem $fileA, FileSystem $fileB): int {
+                    return strcmp(
+                        $fileA->isDir() ? $fileA->path()->basename : $fileA->path()->filename,
+                        $fileB->isDir() ? $fileB->path()->basename : $fileB->path()->filename
+                    );
+                });
+                return $files;
+
+            case 'rand':
+            case 'random':
+            case 'rng':
+                $files = iterator_to_array($iterator->all());
+                $fileCount = count($files);
+                usort($files, static fn(): int => random_int($fileCount * -1, $fileCount));
+                return $files;
+
+        }
+
+        throw new \UnexpectedValueException("Unsupported sortBy: '{$this->config->sortBy}'. Unable to order files.", 500);
     }
 
     public function dir(): Directory
@@ -115,62 +184,47 @@ class DirectoryList
     }
 
     /**
-     * @return FileSystem[]
-     * @throws AccessDeniedException
-     * @throws Exception
-     * @throws UnexpectedValueException
-     * @throws UnsupportedException
+     * @return array<Directory|File>
      */
     public function list(): array
     {
-        $iterator = $this->directory
-            ->list(false)
-            ->filterPath([$this, 'filterFileIndex']);
+        return $this->files;
+    }
 
-        switch (strtolower($this->config->sortBy)) {
+    /**
+     * @return array<Directory|File>
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws UnexpectedValueException
+     * @throws FileNotFoundException
+     */
+    public function listHighlights(): array
+    {
+        $highlightCount = abs($this->config->highlights);
 
-            case 'dynamic':
-                return array_merge(
-                    iterator_to_array($iterator->dirs()),
-                    iterator_to_array($iterator->files())
-                );
+        $highlights = [];
+        $counter = 1;
 
-            case 'lastmodified':
-            case 'last_modified':
-                $files = iterator_to_array($iterator->all());
-                usort($files, static function (FileSystem $fileA, FileSystem $fileB): int {
-                    return $fileB->getTime(Time::LAST_MODIFIED) - $fileA->getTime(Time::LAST_MODIFIED);
-                });
-                return $files;
+        /** @var Directory|File $file */
+        foreach ($this->files as $file) {
 
-            case 'created':
-                $files = iterator_to_array($iterator->all());
-                usort($files, static function (FileSystem $fileA, FileSystem $fileB): int {
-                    return $fileB->getTime(Time::CREATED) - $fileA->getTime(Time::CREATED);
-                });
-                return $files;
+            if ($file instanceof Directory) {
+                continue;
+            }
 
-            case 'name':
-                $files = iterator_to_array($iterator->all());
-                usort($files, static function (FileSystem $fileA, FileSystem $fileB): int {
-                    return strcmp(
-                        $fileA->isDir() ? $fileA->path()->basename : $fileA->path()->filename,
-                        $fileB->isDir() ? $fileB->path()->basename : $fileB->path()->filename
-                    );
-                });
-                return $files;
+            $type = $file->storage()->getFileType(false);
+            if ($type === null || strpos($type, 'image/') !== 0) {
+                continue;
+            }
 
-            case 'rand':
-            case 'random':
-            case 'rng':
-                $files = iterator_to_array($iterator->all());
-                $fileCount = count($files);
-                usort($files, static fn(): int => random_int($fileCount * -1, $fileCount));
-                return $files;
+            if ($counter++ > $highlightCount) {
+                break;
+            }
 
+            $highlights[] = $file;
         }
 
-        throw new \UnexpectedValueException("Unsupported sortBy: '{$this->config->sortBy}'. Unable to order files.", 500);
+        return $highlights;
     }
 
     /**

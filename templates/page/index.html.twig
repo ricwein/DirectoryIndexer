@@ -65,6 +65,11 @@
 
 {% block main %}
     <div class="container is-fluid index">
+
+        {% if config.highlights > 0 and index.isRoot() %}
+            {% include 'page/moduls/hightlight.html.twig' %}
+        {% endif %}
+
         <table class="table container-table is-hoverable is-fullwidth" id="index">
             <thead>
             <tr>
@@ -183,7 +188,6 @@
                 {% endif %}
 
             {% else %}
-
                 <tr>
                     <td colspan="6">
                         <h5 class="title is-5"><i class="far fa-folder-open"></i> This folder is empty.</h5>
@@ -196,25 +200,12 @@
 
         {% set readmeFile = index.dir().file('README.md') %}
         {% if readmeFile.isFile() %}
-            {% block readme %}
-                {% cache 'readme_md_' ~ readmeFile.path().real ~ '_' ~ readmeFile.getTime() %}
-                    <div class="container">
-                        <nav class="panel is-accent">
-                            <p class="panel-heading">
-                                {{ readmeFile.path().filename }}
-                            </p>
-                            <div class="panel-block">
-                                <div class="content">
-                                    {{ readmeFile.read() | render_markdown(url.current) }}
-                                </div>
-                            </div>
-                        </nav>
-                    </div>
-                {% endcache %}
-            {% endblock %}
+            {% include 'page/moduls/readme.html.twig' with {
+                'readmeFile': readmeFile
+            } only %}
         {% endif %}
-    </div>
 
+    </div>
 {% endblock %}
 
 {% block footer %}
