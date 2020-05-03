@@ -98,12 +98,20 @@ tr.clickableRow {
     border-bottom-right-radius: 0.3rem;
   }
 
-  &:hover {
+
+  &:target {
+    opacity: 0.8;
+  }
+
+  &:hover, &:active {
     opacity: 1.0;
-    transition: transform 0.05s ease-in-out;
     transform: scale(1.02, 1.02) !important;
     -webkit-transform: scale(1.02, 1.02) !important;
     -moz-transform: scale(1.02, 1.02) !important;
+  }
+
+  &:target, &:hover, &:active {
+    transition: transform 0.05s ease-in-out;
 
     td {
       color: var(--main-bg-color);

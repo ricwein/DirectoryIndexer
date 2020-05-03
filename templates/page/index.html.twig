@@ -80,12 +80,12 @@
             <tbody>
 
             {% if not(index.isRoot()) %}
-                <tr data-sort-method='none' class="clickableRow" data-uri="{{ url.base }}{{ index.relativePathUp() }}">
+                <tr data-sort-method='none' class="clickableRow" data-uri="{{ url.base }}{{ index.relativePathUp() }}/">
                     <td>
                         <i class="fas fa-arrow-up"></i>
                     </td>
                     <td colspan="6">
-                        <a href="{{ url.base }}{{ index.relativePathUp() }}">
+                        <a href="{{ url.base }}{{ index.relativePathUp() }}/">
                             <span class="filename">../</span>
                         </a>
                     </td>
@@ -99,7 +99,7 @@
 
                 {% if file.isDir() %}
 
-                    <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().basename | url_encode }}">
+                    <tr id="{{ file.path().basename }}/" class="clickableRow" data-uri="{{ url.current }}/{{ file.path().basename | url_encode }}/">
                         <td>
                             <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
                         </td>
@@ -140,7 +140,7 @@
 
                 {% else %}
 
-                    <tr class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                    <tr id="{{ file.path().filename }}" class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
                         <td>
                             {% if fileMetaData.supportsThumbnail() %}
                                 <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>

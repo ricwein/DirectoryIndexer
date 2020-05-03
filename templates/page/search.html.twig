@@ -49,7 +49,7 @@
 
                 {% if file.isDir() %}
 
-                    <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
+                    <tr id="{{ file.path().filepath | ltrim('/') }}/" class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}/">
                         <td>
                             <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
                         </td>
@@ -89,7 +89,7 @@
 
                 {% else %}
 
-                    <tr class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
+                    <tr id="{{ file.path().filepath | ltrim('/') }}" class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
                             {% if fileMetaData.supportsThumbnail() %}
                                 <img class="thumbnail" loading="lazy" src="{{ url.base }}/{{ file.path().filepath | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
@@ -102,7 +102,7 @@
                             <nav class="breadcrumb path" aria-label="path">
                                 <ul>
                                     {% for (path, name) in iterate_path(file.path().filepath) %}
-                                        <li class="{{ loop.last ? 'filename' }}"><a href="{{ url.base }}/{{ path }}" aria-label="Previous Directory {{ name }}">{{ name }}</a></li>
+                                        <li class="{{ loop.last ? 'filename' }}"><a href="{{ url.base }}/{{ path }}{{ not(loop.last) ? '/' }}" aria-label="Previous Directory {{ name }}">{{ name }}</a></li>
                                     {% endfor %}
                                 </ul>
                             </nav>
