@@ -702,26 +702,45 @@ class Renderer
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
+     * @throws FileSystemException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
+     * @throws UnsupportedException
      */
     private function displayFile(File $file): void
     {
-        $this->http->streamFile($file, false);
+        $storage = $file->storage();
+
+        if (!$storage instanceof Storage\Disk) {
+            $this->http->streamFile($file, $this->config, false);
+            return;
+        }
+
+        $fileMetaData = new MetaData($storage, $this->cache, $this->getRootDir(), $this->config);
+        $this->http->streamFileMetaData($fileMetaData, $this->config, false);
     }
 
     /**
      * @param File $file
      * @param string|null $asName
      * @throws AccessDeniedException
-     * @throws ConstraintsException
      * @throws FileNotFoundException
+     * @throws FileSystemException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
+     * @throws UnsupportedException
      */
     private function downloadFile(File $file, ?string $asName = null): void
     {
-        $this->http->streamFile($file, true, $asName);
+        $storage = $file->storage();
+
+        if (!$storage instanceof Storage\Disk) {
+            $this->http->streamFile($file, $this->config, true, $asName);
+            return;
+        }
+
+        $fileMetaData = new MetaData($storage, $this->cache, $this->getRootDir(), $this->config);
+        $this->http->streamFileMetaData($fileMetaData, $this->config, true, $asName);
     }
 
     /**

@@ -7,12 +7,18 @@ use DaveRandom\Resume\Range;
 use DaveRandom\Resume\RangeSet;
 use DaveRandom\Resume\UnsatisfiableRangeException;
 use Monolog\Logger;
+use ricwein\FileSystem\Enum\Time;
 use ricwein\FileSystem\Exceptions\AccessDeniedException;
 use ricwein\FileSystem\Exceptions\ConstraintsException;
+use ricwein\FileSystem\Exceptions\Exception;
 use ricwein\FileSystem\Exceptions\FileNotFoundException;
 use ricwein\FileSystem\Exceptions\RuntimeException as FileSystemRuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
+use ricwein\FileSystem\Exceptions\UnsupportedException;
 use ricwein\FileSystem\File;
+use ricwein\FileSystem\Storage;
+use ricwein\Indexer\Config\Config;
+use ricwein\Indexer\Indexer\FileInfo\MetaData;
 use RuntimeException;
 
 /**
@@ -348,43 +354,105 @@ class Http
 
     /**
      * @param File $file
+     * @param Config $config
      * @param bool $forceDownload
      * @param string|null $asName
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
      * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
      */
-    protected function streamFile(File $file, bool $forceDownload, ?string $asName = null): void
+    protected function streamFile(File $file, Config $config, bool $forceDownload, ?string $asName = null): void
     {
         $totalSize = $file->getSize();
 
+        // build response headers
         $headers = [
-            'Content-Type' => $file->storage()->getFileType(false),
+            'Content-Type' => $file->getType(),
             'Accept-Ranges' => 'bytes',
-            'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime()),
-            'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
-            'Pragma' => 'no-cache',
+            'Last-Modified' => gmdate('D, d M Y H:i:s T', $file->getTime(Time::LAST_MODIFIED)),
         ];
 
+        // handle caching
+        if ($config->cache['enabled']) {
+            $headers['Cache-Control'] = "max-age={$config->cache['ttl']}";
+        } else {
+            $headers['Cache-Control'] = ['public', 'must-revalidate', 'max-age=0'];
+            $headers['Pragma'] = 'no-cache';
+        }
+
+        // handle force-downloads
         if ($forceDownload) {
             $filename = $asName ?? $file->path()->filename;
             $headers['Content-Disposition'] = ['attachment', "filename=\"{$filename}\""];
         }
 
-        try {
+        $this->stream($file->storage(), $headers, $totalSize);
+    }
 
-            // simple file request
+    /**
+     * @param MetaData $fileMetaData
+     * @param Config $config
+     * @param bool $forceDownload
+     * @param string|null $asName
+     * @throws AccessDeniedException
+     * @throws Exception
+     * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
+     * @throws UnsupportedException
+     */
+    protected function streamFileMetaData(MetaData $fileMetaData, Config $config, bool $forceDownload, ?string $asName = null): void
+    {
+        $totalSize = $fileMetaData->size();
+
+        // build response headers
+        $headers = [
+            'Content-Type' => $fileMetaData->mimeType(),
+            'Accept-Ranges' => 'bytes',
+            'Last-Modified' => gmdate('D, d M Y H:i:s T', $fileMetaData->timeLastModified()),
+        ];
+
+        // handle caching
+        if ($config->cache['enabled']) {
+            $headers['Cache-Control'] = "max-age={$config->cache['ttl']}";
+
+            if ($fileMetaData->isCached('hashSHA1')) {
+                $headers['ETag'] = $fileMetaData->hashSHA1();
+            }
+        } else {
+            $headers['Cache-Control'] = ['public', 'must-revalidate', 'max-age=0'];
+            $headers['Pragma'] = 'no-cache';
+        }
+
+        // handle force-downloads
+        if ($forceDownload) {
+            $filename = $asName ?? $fileMetaData->filename();
+            $headers['Content-Disposition'] = ['attachment', "filename=\"{$filename}\""];
+        }
+
+        $this->stream($fileMetaData->getStorage(), $headers, $totalSize);
+    }
+
+    /**
+     * @param Storage $storage
+     * @param array $headers
+     * @param int $totalSize
+     * @throws FileNotFoundException
+     */
+    private function stream(Storage $storage, array $headers, int $totalSize): void
+    {
+        // simple file request
+        try {
             if (null === $rangeSet = RangeSet::createFromHeader($this->get('HTTP_RANGE', static::SERVER, null))) {
                 $headers['Content-Length'] = $totalSize;
                 static::sendStatusHeader(200);
                 static::sendHeaders($headers);
-                $file->stream();
+                $storage->streamFile();
                 exit(0);
             }
 
             $ranges = $rangeSet->getRangesForSize($totalSize);
-
         } catch (UnsatisfiableRangeException|InvalidRangeHeaderException $exception) {
             throw new RuntimeException("Invalid range: {$exception->getMessage()}", 416, $exception);
         }
@@ -400,11 +468,13 @@ class Http
 
         foreach ($ranges as $range) {
             if ($range->getStart() !== 0 || $range->getLength() !== $totalSize) {
-                $file->stream($range->getStart(), $range->getLength());
+                $storage->streamFile($range->getStart(), $range->getLength());
             } else {
-                $file->stream();
+                $storage->streamFile();
             }
         }
+
         exit(0);
     }
+
 }

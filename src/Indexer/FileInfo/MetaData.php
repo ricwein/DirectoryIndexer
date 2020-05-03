@@ -529,4 +529,9 @@ class MetaData
 
         return ['file', 'far fa-file', $mimeType];
     }
+
+    public function getStorage(): Storage\Disk
+    {
+        return $this->storage;
+    }
 }
