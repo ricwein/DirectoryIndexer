@@ -90,11 +90,15 @@ class Router
                 });
             }
 
+            if ($this->http->getQueryParameter('info') !== null) {
+                $routes->addRoute('POST', '/{path:.*}', function (string $path) {
+                    $this->renderer->displayPathInfo($path);
+                });
+            }
+
             // Routes: view directory index for path, support for: download and info queries
             $routes->addRoute('GET', '/{path:.*}', function (string $path) {
-                if ($this->http->getQueryParameter('info') !== null) {
-                    $this->renderer->displayPathInfo($path);
-                } elseif ($this->http->getQueryParameter('download') !== null) {
+                if ($this->http->getQueryParameter('download') !== null) {
                     $this->renderer->downloadDirectoryZip($path);
                 } elseif ($this->http->getQueryParameter('thumbnail') !== null) {
                     $this->renderer->displayThumbnail($path);

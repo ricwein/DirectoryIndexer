@@ -53,21 +53,6 @@ class FileInfo
     }
 
     /**
-     * @return array
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws Exception
-     * @throws RuntimeException
-     * @throws UnexpectedValueException
-     * @throws UnsupportedException
-     */
-    public function getInfo(): array
-    {
-        $metaData = $this->meta();
-        return $this->formatMetaData($metaData);
-    }
-
-    /**
      * @return MetaData
      */
     public function meta(): MetaData
@@ -133,44 +118,6 @@ class FileInfo
         $this->cache->save($cacheItem);
 
         return $thumbnail;
-    }
-
-    /**
-     * @param MetaData $metaData
-     * @return array
-     * @throws AccessDeniedException
-     * @throws ConstraintsException
-     * @throws Exception
-     * @throws RuntimeException
-     * @throws UnexpectedValueException
-     * @throws UnsupportedException
-     */
-    private function formatMetaData(MetaData $metaData): array
-    {
-        return [
-            'filename' => $metaData->filename(),
-            'hidden' => $metaData->isHidden(),
-            'isDir' => $metaData->isDir(),
-            'type' => [
-                'name' => $metaData->type(),
-                'mime' => $metaData->mimeType(),
-                'icon' => $metaData->faIcon(),
-            ],
-            'size' => [
-                'bytes' => $metaData->size(),
-                'hr' => (new CoreFunctions(new TemplateConfig))->formatBytes($metaData->size(), 1),
-            ],
-            'hash' => [
-                'md5' => $metaData->hashMD5(),
-                'sha1' => $metaData->hashSHA1(),
-                'sha256' => $metaData->hashSHA256(),
-            ],
-            'time' => [
-                'modified' => $metaData->timeLastModified(),
-                'accessed' => $metaData->timeLastAccessed(),
-                'created' => $metaData->timeCreated(),
-            ]
-        ];
     }
 
     /**

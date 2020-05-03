@@ -1,0 +1,37 @@
+<h1 class="title is-5">
+    <i class="fa-fw {{ metaData.faIcon() }}"></i>
+    &nbsp;
+    {{ metaData.filename() }}
+</h1>
+
+<div class='content'>
+    <table class="table is-hoverable is-fullwidth">
+        <tbody>
+
+        <tr>
+            <td class="data-attribute"><strong>Size</strong></td>
+            <td class="data-value">{{ metaData.size() | format_bytes(1) }}</td>
+        </tr>
+
+        {% if not(metaData.isDir()) %}
+            <tr>
+                <td class="data-attribute"><strong>MimeType</strong></td>
+                <td class="data-value">{{ metaData.mimeType() ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td class="data-attribute"><strong>MD5</strong></td>
+                <td class="data-value">{{ metaData.hashMD5() }}</td>
+            </tr>
+            <tr>
+                <td class="data-attribute"><strong>SHA1</strong></td>
+                <td class="data-value">{{ metaData.hashSHA1() }}</td>
+            </tr>
+            <tr>
+                <td class="data-attribute"><strong>SHA256</strong></td>
+                <td class="data-value">{{ metaData.hashSHA256() }}</td>
+            </tr>
+        {% endif %}
+
+        </tbody>
+    </table>
+</div>

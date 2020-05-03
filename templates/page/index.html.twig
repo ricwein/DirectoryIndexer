@@ -50,7 +50,7 @@
 
             {% if config.indexRoot or not(index.isRoot()) or dirMetaData.isCached('size') %}
                 <a class="button is-link is-light view-modal-info hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | url_encode }}?info" aria-label="View Info">
-                    <i class="fas fa-eye"></i>
+                    <i class="fas fa-ellipsis-h"></i>
                 </a>
             {% endif %}
 
@@ -67,7 +67,11 @@
     <div class="container is-fluid index">
 
         {% if config.highlights > 0 %}
-            {% include 'page/moduls/hightlight.html.twig' %}
+            {% set highlightedFiles = index.listHighlights() %}
+            {% include 'page/moduls/hightlight.html.twig' with {
+                'highlightedFiles': highlightedFiles,
+                'url': url
+            } %}
         {% endif %}
 
         <table class="table container-table is-hoverable is-fullwidth" id="index">

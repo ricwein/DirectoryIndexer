@@ -3,32 +3,32 @@
 
         <div class="tile">
 
-            {% for file in index.listHighlights() %}
-            {% set fileMetaData = get_file_metadata(file.storage()) %}
+            {% for file in highlightedFiles %}
+                {% set fileMetaData = get_file_metadata(file.storage()) %}
 
-            {# highlight item container #}
-            <div class="tile is-parent">
-                <article
-                        class="tile is-child notification is-black is-light item-preview"
-                        style="background-image: url('{{ url.current }}/{{ file.path().filename | url_encode }}')"
-                >
-                    <div class="content">
-                        <p class="title">{{ file.path().basename }}</p>
-                        <p class="subtitle">{{ file.path().extension | lower }} • {{ fileMetaData.size() | format_bytes(1) }}</p>
-                    </div>
-                    <div class="buttons">
-                        <a class="button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}?download">
-                            <i class="fas fa-download"></i>
-                        </a>
-                    </div>
-                </article>
-            </div>
-
-            {# end current row and start a new one #}
-            {% if (loop.index % 3) == 0 and not(loop.last) %}
+                {# highlight item container #}
+                <div class="tile is-parent">
+                    <article
+                            class="tile is-child notification is-black is-light item-preview"
+                            style="background-image: url('{{ url.current }}/{{ file.path().filename | url_encode }}')"
+                    >
+                        <div class="content">
+                            <p class="title">{{ file.path().basename }}</p>
+                            <p class="subtitle">{{ file.path().extension | lower }} • {{ fileMetaData.size() | format_bytes(1) }}</p>
+                        </div>
+                        <div class="buttons">
+                            <a class="button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </article>
                 </div>
-                <div class="tile">
-            {% endif %}
+
+                {# end current row and start a new one #}
+                {% if (loop.index % 3) == 0 and not(loop.last) %}
+                    </div>
+                    <div class="tile">
+                {% endif %}
 
             {% endfor %}
 

@@ -428,6 +428,11 @@ class Renderer
      */
     private function getRootDir(): Directory
     {
+        static $rootDir = null;
+        if ($rootDir !== null) {
+            return $rootDir;
+        }
+
         if (null !== $path = $this->config->path) {
 
             if (strpos($path, '/') === 0) {
@@ -491,9 +496,8 @@ class Renderer
             throw new FileNotFoundException("File not found: {$path}", 404);
         }
 
-
         if ($storage->isFile()) {
-            $this->displayFile(new File($storage));
+            $this->displayFile(new File($storage), $rootDir);
         }
 
         if (!$storage->isDir()) {
@@ -596,17 +600,11 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        $info = (new FileInfo($storage, $this->cache, $this->config, $rootDir, $rootDir->storage()->getConstraints()))->getInfo();
+        $bindings = [
+            'metaData' => new MetaData($storage->setConstraints($rootDir->storage()->getConstraints()), $this->cache, $rootDir, $this->config),
+        ];
 
-        Http::sendStatusHeader(200);
-        Http::sendHeaders([
-            'Content-Type' => 'application/json; charset=utf8',
-            'Cache-Control' => ['public', 'must-revalidate', 'max-age=0'],
-            'Pragma' => 'no-cache',
-        ]);
-
-        echo json_encode($info, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT, 512);
-        exit(0);
+        $this->display('modal/fileinfo.html.twig', 200, $bindings);
     }
 
     /**
@@ -640,14 +638,14 @@ class Renderer
                 throw new RuntimeException('Unable to generate Thumbnail.', 400);
             }
 
-            $this->displayFile($thumbnail);
+            $this->displayFile($thumbnail, $rootDir);
         } catch (NotReadableException $exception) {
             if ($this->config->development) {
                 throw $exception;
             }
 
             $this->logException($exception);
-            $this->displayFile(new File($storage, $rootDir->storage()->getConstraints()));
+            $this->displayFile(new File($storage, $rootDir->storage()->getConstraints()), $rootDir);
         }
     }
 
@@ -675,7 +673,7 @@ class Renderer
         }
 
         if (!$storage->isDir()) {
-            $this->downloadFile(new File($storage));
+            $this->downloadFile(new File($storage), $rootDir);
         }
 
         $zipCache = new Storage\Disk\Temp();
@@ -694,11 +692,12 @@ class Renderer
         });
         $zip->commit();
 
-        $this->downloadFile($zip, "{$storage->path()->basename}.zip");
+        $this->downloadFile($zip, $rootDir, "{$storage->path()->basename}.zip");
     }
 
     /**
      * @param File $file
+     * @param Directory $rootDir
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
@@ -707,7 +706,7 @@ class Renderer
      * @throws UnexpectedValueException
      * @throws UnsupportedException
      */
-    private function displayFile(File $file): void
+    private function displayFile(File $file, Directory $rootDir): void
     {
         $storage = $file->storage();
 
@@ -716,21 +715,23 @@ class Renderer
             return;
         }
 
-        $fileMetaData = new MetaData($storage, $this->cache, $this->getRootDir(), $this->config);
+        $fileMetaData = new MetaData($storage->setConstraints($rootDir->storage()->getConstraints()), $this->cache, $rootDir, $this->config);
         $this->http->streamFileMetaData($fileMetaData, $this->config, false);
     }
 
     /**
      * @param File $file
+     * @param Directory $rootDir
      * @param string|null $asName
      * @throws AccessDeniedException
+     * @throws ConstraintsException
      * @throws FileNotFoundException
      * @throws FileSystemException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
      * @throws UnsupportedException
      */
-    private function downloadFile(File $file, ?string $asName = null): void
+    private function downloadFile(File $file, Directory $rootDir, ?string $asName = null): void
     {
         $storage = $file->storage();
 
@@ -739,7 +740,7 @@ class Renderer
             return;
         }
 
-        $fileMetaData = new MetaData($storage, $this->cache, $this->getRootDir(), $this->config);
+        $fileMetaData = new MetaData($storage->setConstraints($rootDir->storage()->getConstraints()), $this->cache, $rootDir, $this->config);
         $this->http->streamFileMetaData($fileMetaData, $this->config, true, $asName);
     }
 

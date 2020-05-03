@@ -60,14 +60,37 @@ progress.is-accent {
   }
 }
 
-.tingle-modal-box .content ul li {
-  -moz-user-select: text;
-  -khtml-user-select: text;
-  -webkit-user-select: text;
-  -ms-user-select: text;
-  user-select: text;
+.tingle-modal-box .content table {
+  tbody tr td {
+
+    border-color: transparent;
+
+    &.data-attribute {
+      font-weight: bold;
+    }
+
+    &.data-value {
+      -moz-user-select: text;
+      -khtml-user-select: text;
+      -webkit-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+
+    &:first-of-type {
+      border-top-left-radius: 0.3rem;
+      border-bottom-left-radius: 0.3rem;
+    }
+
+    &:last-of-type {
+      border-top-right-radius: 0.3rem;
+      border-bottom-right-radius: 0.3rem;
+    }
+
+  }
 }
 
 .path.breadcrumb li a {
   padding: 0;
 }
+
