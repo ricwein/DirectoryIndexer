@@ -54,10 +54,8 @@
                 </a>
             {% endif %}
 
-            <a class="button is-black is-light hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | ltrim('/') }}?download" aria-label="Download Zip">
-                <i class="fas fa-file-archive"></i>
-                &nbsp;
-                <i class="fas fa-arrow-down"></i>
+            <a class="button is-link is-light hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | ltrim('/') }}?download" aria-label="Download Zip">
+                <i class="fas fa-fw fa-file-archive"></i> <i class="fas fa-fw fa-arrow-down"></i>
             </a>
         </div>
     </div>
