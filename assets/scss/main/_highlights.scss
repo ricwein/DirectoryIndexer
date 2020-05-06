@@ -1,67 +1,47 @@
-.tile.item-preview {
-  height: 25vh;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: transparent;
-  background-size: cover;
-  border-radius: 1.5rem;
-  border: 0.1px solid transparent;
-  transition: transform 0.15s ease-in-out, border 0.15s ease-in-out, filter 0.15s ease-in-out;
-  filter: brightness(0.8);
+.file-highlights {
+  margin: auto !important;
+
+  .tile.item-preview {
+    z-index: 2;
+    height: 25vh;
+    max-height: 200px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    background-size: cover;
+    border-radius: 1.5rem;
+    border: 0.1px solid transparent;
+    transition: transform 0.15s ease-in-out, border 0.15s ease-in-out, filter 0.15s ease-in-out;
+    filter: brightness(0.8);
 
 
-  .content {
-    color: white;
-    text-shadow: 0 0.5em 1em black;
-    bottom: 0.5rem;
-    position: absolute;
-
-    .title {
-      font-weight: bold;
-      font-size: 1.5rem;
-    }
-
-    .subtitle {
-      font-weight: bold;
-      font-size: 1rem;
-      color: rgba(200, 200, 200, 0.5);
-      text-shadow: 0 0.5em 1em black, 0 0.1em 0.2em rgba(40, 40, 40, 0.8);
-    }
-  }
-
-  .buttons {
-    bottom: 0;
-    right: 0.5rem;
-    position: absolute;
-    margin: 0.5rem;
-    padding: 0;
-
-    a {
+    .content {
       color: white;
-      transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
-    }
-  }
+      text-shadow: 0 0.5em 1em black;
+      bottom: 0.5rem;
+      position: absolute;
 
-  &:hover, &:active {
-    border-color: var(--main-accent-color);
-    box-shadow: 0 0.1em 2em -0.4em var(--main-accent-color), 0 0.2em 1em -0.125em black;
-    transform: scale(1.05);
-    z-index: 10;
-    transition: transform 0.05s ease-in-out;
-
-    filter: brightness(1.0) saturate(1.2);
-
-    & > .buttons {
-      & a {
-        color: white;
-        background-color: rgba(240, 240, 240, 0.4);
-        transition: color 0.05s ease-in-out, background-color 0.05s ease-in-out;
-
-        &:hover {
-          color: black;
-          background-color: white;
-        }
+      .title {
+        font-weight: bold;
+        font-size: 1.5rem;
       }
+
+      .subtitle {
+        font-weight: bold;
+        font-size: 1rem;
+        color: rgba(200, 200, 200, 0.5);
+        text-shadow: 0 0.5em 1em black, 0 0.1em 0.2em rgba(40, 40, 40, 0.8);
+      }
+    }
+
+    &:hover, &:active {
+      border-color: var(--main-accent-color);
+      box-shadow: 0 0.1em 2em -0.4em var(--main-accent-color), 0 0.2em 1em -0.125em black;
+      transform: scale(1.02);
+      z-index: 10;
+      transition: transform 0.05s ease-in-out;
+
+      filter: brightness(1.0) saturate(1.2);
     }
   }
 }

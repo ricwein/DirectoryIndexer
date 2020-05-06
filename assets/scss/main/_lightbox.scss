@@ -1,0 +1,67 @@
+.glightbox-container {
+  .zoomed img {
+    border-radius: 0.7rem !important;
+  }
+
+  .ginner-container {
+    & > * {
+      &:first-child {
+        &, & > img {
+          border-top-left-radius: 0.5rem !important;
+          border-top-right-radius: 0.5rem !important;
+        }
+      }
+
+      &:last-child {
+        border-bottom-left-radius: 0.5rem !important;
+        border-bottom-right-radius: 0.5rem !important;
+      }
+    }
+
+    .gslide-description {
+      .gslide-title {
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin: 0;
+      }
+
+      .gslide-desc {
+        font-weight: bold;
+        font-size: 1rem;
+        margin: 0;
+        color: rgba(gray, 0.8) !important;
+      }
+    }
+
+    .buttons {
+      z-index: 4;
+      position: absolute;
+      top: -3rem;
+      right: 0.5rem;
+      margin: 0;
+      padding: 0;
+
+      a {
+        z-index: 5;
+        color: white;
+        transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+      }
+    }
+
+    *:hover, *:active {
+      & .buttons {
+        & a {
+          color: white;
+          background-color: rgba(240, 240, 240, 0.4);
+          transition: color 0.05s ease-in-out, background-color 0.05s ease-in-out;
+
+          &:hover {
+            color: black;
+            background-color: white;
+          }
+        }
+      }
+    }
+
+  }
+}

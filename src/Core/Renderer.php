@@ -578,15 +578,15 @@ class Renderer
 
     /**
      * @param string $path
+     * @return array[Directory, Storage\Disk]
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
      * @throws FileSystemException
      * @throws FileSystemRuntimeException
      * @throws UnexpectedValueException
-     * @throws JsonException
      */
-    public function displayPathInfo(string $path): void
+    private function loadPath(string $path): array
     {
         $rootDir = $this->getRootDir();
         $storage = new Storage\Disk($rootDir, $path);
@@ -599,6 +599,23 @@ class Renderer
         if (strpos($storage->path()->real, $rootDir->path()->real) !== 0) {
             throw new RuntimeException('Access denied.', 403);
         }
+
+        return [$rootDir, $storage];
+    }
+
+    /**
+     * @param string $path
+     * @throws AccessDeniedException
+     * @throws ConstraintsException
+     * @throws FileNotFoundException
+     * @throws FileSystemException
+     * @throws FileSystemRuntimeException
+     * @throws UnexpectedValueException
+     * @throws JsonException
+     */
+    public function displayPathInfo(string $path): void
+    {
+        [$rootDir, $storage] = $this->loadPath($path);
 
         $bindings = [
             'metaData' => new MetaData($storage->setConstraints($rootDir->storage()->getConstraints()), $this->cache, $rootDir, $this->config),
@@ -619,17 +636,7 @@ class Renderer
      */
     public function displayThumbnail(string $path): void
     {
-        $rootDir = $this->getRootDir();
-        $storage = new Storage\Disk($rootDir, $path);
-        $pathIgnore = new PathIgnore($rootDir, $this->config);
-
-        if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
-            throw new FileNotFoundException("File not found: {$path}", 404);
-        }
-
-        if (strpos($storage->path()->real, $rootDir->path()->real) !== 0) {
-            throw new RuntimeException('Access denied.', 403);
-        }
+        [$rootDir, $storage] = $this->loadPath($path);
 
         try {
             $fileInfo = new FileInfo($storage, $this->cache, $this->config, $rootDir, $rootDir->storage()->getConstraints());
@@ -660,17 +667,7 @@ class Renderer
      */
     public function downloadDirectoryZip(string $path): void
     {
-        $rootDir = $this->getRootDir();
-        $storage = new Storage\Disk($rootDir, $path);
-        $pathIgnore = new PathIgnore($rootDir, $this->config);
-
-        if (!$storage->isReadable() || $pathIgnore->isForbiddenStorage($storage)) {
-            throw new FileNotFoundException("File not found: {$path}", 404);
-        }
-
-        if (strpos($storage->path()->real, $rootDir->path()->real) !== 0) {
-            throw new RuntimeException('Access denied.', 403);
-        }
+        [$rootDir, $storage] = $this->loadPath($path);
 
         if (!$storage->isDir()) {
             $this->downloadFile(new File($storage), $rootDir);

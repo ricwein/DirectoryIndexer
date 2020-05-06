@@ -1,27 +1,34 @@
 {% block highlight %}
-    <div class="tile is-ancestor is-vertical">
+    <div class="container file-highlights">
 
         <div class="tile">
 
             {% for file in highlightedFiles %}
                 {% set fileMetaData = get_file_metadata(file.storage()) %}
 
+                <div class="glightbox-desc gallery-highlights-desc-{{ loop.index }}">
+                    <p>{{ file.path().extension | lower }} <small>({{ fileMetaData.mimeType() }})</small> • {{ fileMetaData.size() | format_bytes(1) }}</p>
+                    <div class="buttons">
+                        <a class="button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}?download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+
                 {# highlight item container #}
                 <div class="tile is-parent">
-                    <article
-                            class="tile is-child notification is-black is-light item-preview"
+                    <a
+                            class="tile is-child notification is-black is-light item-preview glightbox"
                             style="background-image: url('{{ url.current }}/{{ file.path().filename | url_encode }}')"
+                            href="{{ url.current }}/{{ file.path().filename | url_encode }}"
+                            data-gallery="gallery-highlights"
+                            data-glightbox="title: {{ file.path().basename }}; description: .gallery-highlights-desc-{{ loop.index }}"
                     >
                         <div class="content">
                             <p class="title">{{ file.path().basename }}</p>
                             <p class="subtitle">{{ file.path().extension | lower }} • {{ fileMetaData.size() | format_bytes(1) }}</p>
                         </div>
-                        <div class="buttons">
-                            <a class="button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                        </div>
-                    </article>
+                    </a>
                 </div>
 
                 {# end current row and start a new one #}

@@ -3,11 +3,15 @@
 {% block head %}
     {{ parent() }}
     {{ asset('/libs/hint/hint.css', 'preload:withFallback') }}
+
     {% if config.debug %}
         {{ asset('/libs/tingle/dist/tingle.css', 'preload:withFallback') }}
+        {{ asset('/libs/glightbox/dist/css/glightbox.css', 'preload:withFallback') }}
     {% else %}
         {{ asset('/libs/tingle/dist/tingle.min.css', 'preload:withFallback') }}
+        {{ asset('/libs/glightbox/dist/css/glightbox.min.css', 'preload:withFallback') }}
     {% endif %}
+
 {% endblock %}
 
 {% block site_title %}
@@ -64,6 +68,7 @@
 {% endblock %}
 
 {% block main %}
+    <script>var elements = [];</script>
     <div class="container is-fluid index">
 
         {% if config.highlights > 0 %}
@@ -71,7 +76,7 @@
             {% include 'page/moduls/hightlight.html.twig' with {
                 'highlightedFiles': highlightedFiles,
                 'url': url
-            } %}
+            } only %}
         {% endif %}
 
         <table class="table container-table is-hoverable is-fullwidth" id="index">
@@ -157,7 +162,7 @@
                         </td>
 
                         <td data-sort-column-key="name" data-sort='{{ file.path().filename }}'>
-                            <a href="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                            <a class="glightbox" href="{{ url.current }}/{{ file.path().filename | url_encode }}" data-gallery="gallery-index">
                                 <span class="filename">{{ file.path().filename }}</span>
                             </a>
                         </td>
@@ -223,10 +228,17 @@
 
     {{ asset('/js/clickableRows.js', 'inline') }}
 
+
     {% if config.debug %}
         {{ asset('/libs/tingle/dist/tingle.js') }}
+        {{ asset('/libs/glightbox/dist/js/glightbox.js', 'inline') }}
     {% else %}
         {{ asset('/libs/tingle/dist/tingle.min.js') }}
+        {{ asset('/libs/glightbox/dist/js/glightbox.min.js', 'inline') }}
     {% endif %}
+
+    <script type="text/javascript">
+        const lightboxGalleryHighlights = GLightbox({});
+    </script>
 
 {% endblock %}

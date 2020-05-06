@@ -41,10 +41,24 @@ tr.clickableRow {
 }
 
 .tingle-modal {
-  background-color: rgba(80, 80, 80, 0.85) !important;
+  background-color: rgba(160, 160, 160, 0.55) !important;
 
   &:before {
     backdrop-filter: blur(3px) !important;
     -webkit-backdrop-filter: blur(3px) !important;
+  }
+}
+
+.glightbox-container {
+  .goverlay {
+    background: rgba(160, 160, 160, 0.55) !important;
+    backdrop-filter: blur(3px) !important;
+    -webkit-backdrop-filter: blur(3px) !important;
+  }
+
+  .gslide-description {
+    &, .gslide-title, .gslide-desc {
+      color: $color-light-foreground !important;
+    }
   }
 }
