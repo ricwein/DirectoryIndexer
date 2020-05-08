@@ -14,30 +14,6 @@ if (anchorLink !== null) {
     });
 }
 
-document
-    .querySelectorAll('.open-modal')
-    .forEach(button => button.addEventListener('click', function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        var modal = new tingle.modal({
-            footer: false,
-            cssClass: ['preview'],
-            closeLabel: "Close",
-        });
-
-        let request = new XMLHttpRequest();
-        request.open('GET', button.href, true);
-        request.onload = function () {
-            if (request.status >= 200 && request.status < 400) {
-                modal.setContent(request.responseText);
-                modal.open();
-            }
-        };
-
-        request.send();
-    }));
-
 // handle modal-dialogs
 document
     .querySelectorAll('.view-modal-info')

@@ -13,6 +13,7 @@ use ricwein\FileSystem\Exceptions\Exception;
 use ricwein\FileSystem\Exceptions\RuntimeException;
 use ricwein\FileSystem\Exceptions\UnexpectedValueException;
 use ricwein\FileSystem\Exceptions\UnsupportedException;
+use ricwein\FileSystem\Helper\Path;
 use ricwein\FileSystem\Storage;
 use ricwein\Indexer\Config\Config;
 use ricwein\Indexer\Core\Cache;
@@ -405,16 +406,18 @@ class MetaData
             return ['file', 'far fa-file', $storage->getFileType()];
         }
 
-        if ($storage->path()->real === $rootDir->path()->real) {
-            return ['directory', 'fas fa-crown', null];
-        }
-
         $filename = strtolower($storage->isDir() ? $storage->path()->basename : $storage->path()->filename);
         $extension = strtolower(pathinfo($storage->path()->real, PATHINFO_EXTENSION));
         $isFile = !$storage->isDir();
         $mimeType = $isFile ? strtolower($storage->getFileType()) : null;
 
         switch (true) {
+            case !$isFile && $storage->path()->real === $rootDir->path()->real:
+                return ['directory', 'far fa-folder', null];
+
+            case !$isFile && $storage->path()->real === (new Path([__DIR__, '/../../../']))->real:
+                return ['directory', 'fas fa-crown', null];
+
             // known files (full names)
             case in_array($filename, ['.gitignore', '.dockerignore', '.indexignore'], true):
                 return [$isFile ? 'ignore' : 'directory', 'far fa-eye-slash', $mimeType];

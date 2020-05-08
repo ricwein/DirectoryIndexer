@@ -151,47 +151,59 @@
                     </tr>
 
                 {% else %}
+                    {% set hasLightbox = fileMetaData.type() in ['video', 'image'] %}
 
-                    <tr id="{{ file.path().filename }}" class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
-                        <td>
-                            {% if fileMetaData.supportsThumbnail() %}
-                                <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
-                            {% else %}
-                                <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
-                            {% endif %}
-                        </td>
+                    {% if hasLightbox %}
+                        <tr id="{{ file.path().filename }}" class="clickableRow glightbox" href="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                    {% else %}
+                        <tr id="{{ file.path().filename }}" class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                    {% endif %}
 
-                        <td data-sort-column-key="name" data-sort='{{ file.path().filename }}'>
+                    <td>
+                        {% if fileMetaData.supportsThumbnail() %}
+                            <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
+                        {% else %}
+                            <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
+                        {% endif %}
+                    </td>
+
+                    <td data-sort-column-key="name" data-sort='{{ file.path().filename }}'>
+                        {% if hasLightbox %}
                             <a class="glightbox" href="{{ url.current }}/{{ file.path().filename | url_encode }}" data-gallery="gallery-index">
                                 <span class="filename">{{ file.path().filename }}</span>
                             </a>
-                        </td>
-                        <td>
-                            <a class="is-pulled-right button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}?download">
-                                <i class="fas fa-download"></i>
+                        {% else %}
+                            <a href="{{ url.current }}/{{ file.path().filename | url_encode }}">
+                                <span class="filename">{{ file.path().filename }}</span>
                             </a>
-                        </td>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a class="is-pulled-right button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}?download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </td>
 
-                        <td data-sort-column-key="type">
-                            {{ fileMetaData.type() }}
-                        </td>
+                    <td data-sort-column-key="type">
+                        {{ fileMetaData.type() }}
+                    </td>
 
-                        {% set mtime = (fileMetaData.timeLastModified() ?? file.getTime()) %}
-                        <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
-                            {{ mtime | date('d.m.Y H:i:s') }}
-                        </td>
+                    {% set mtime = (fileMetaData.timeLastModified() ?? file.getTime()) %}
+                    <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
+                        {{ mtime | date('d.m.Y H:i:s') }}
+                    </td>
 
-                        <td data-sort-column-key="size" data-sort='{{ fileMetaData.size() }}'>
-                            {{ fileMetaData.size() | format_bytes(1) }}
+                    <td data-sort-column-key="size" data-sort='{{ fileMetaData.size() }}'>
+                        {{ fileMetaData.size() | format_bytes(1) }}
 
-                            {% if dirMetaData.isCached('size') %}
-                                <progress class="progress is-accent is-small" value="{{ fileMetaData.size() }}" max="{{ dirMetaData.size() }}">TODO%</progress>
-                            {% endif %}
-                        </td>
+                        {% if dirMetaData.isCached('size') %}
+                            <progress class="progress is-accent is-small" value="{{ fileMetaData.size() }}" max="{{ dirMetaData.size() }}">TODO%</progress>
+                        {% endif %}
+                    </td>
 
-                        <td class="has-text-centered">
-                            <a class="button is-black is-light view-modal-info" aria-label="View Info" href="{{ url.current }}/{{ file.path().filename | url_encode }}?info"><i class="fas fa-ellipsis-h"></i></a>
-                        </td>
+                    <td class="has-text-centered">
+                        <a class="button is-black is-light view-modal-info" aria-label="View Info" href="{{ url.current }}/{{ file.path().filename | url_encode }}?info"><i class="fas fa-ellipsis-h"></i></a>
+                    </td>
                     </tr>
 
                 {% endif %}
