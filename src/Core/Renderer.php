@@ -578,7 +578,7 @@ class Renderer
 
     /**
      * @param string $path
-     * @return array[Directory, Storage\Disk]
+     * @return array [Directory, Storage\Disk, PathIgnore]
      * @throws AccessDeniedException
      * @throws ConstraintsException
      * @throws FileNotFoundException
@@ -600,7 +600,7 @@ class Renderer
             throw new RuntimeException('Access denied.', 403);
         }
 
-        return [$rootDir, $storage];
+        return [$rootDir, $storage, $pathIgnore];
     }
 
     /**
@@ -615,7 +615,7 @@ class Renderer
      */
     public function displayPathInfo(string $path): void
     {
-        [$rootDir, $storage] = $this->loadPath($path);
+        [$rootDir, $storage, $_] = $this->loadPath($path);
 
         $bindings = [
             'metaData' => new MetaData($storage->setConstraints($rootDir->storage()->getConstraints()), $this->cache, $rootDir, $this->config),
@@ -636,7 +636,7 @@ class Renderer
      */
     public function displayThumbnail(string $path): void
     {
-        [$rootDir, $storage] = $this->loadPath($path);
+        [$rootDir, $storage, $_] = $this->loadPath($path);
 
         try {
             $fileInfo = new FileInfo($storage, $this->cache, $this->config, $rootDir, $rootDir->storage()->getConstraints());
@@ -667,7 +667,7 @@ class Renderer
      */
     public function downloadDirectoryZip(string $path): void
     {
-        [$rootDir, $storage] = $this->loadPath($path);
+        [$rootDir, $storage, $pathIgnore] = $this->loadPath($path);
 
         if (!$storage->isDir()) {
             $this->downloadFile(new File($storage), $rootDir);
@@ -675,6 +675,7 @@ class Renderer
 
         $zipCache = new Storage\Disk\Temp();
         $zip = new File\Zip($zipCache);
+
         $zip->addDirectoryStorage($storage, '/', static function (Storage\Disk $storage) use ($pathIgnore): bool {
             if (!$storage->isReadable()) {
                 return false;

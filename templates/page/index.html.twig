@@ -6,10 +6,10 @@
 
     {% if config.debug %}
         {{ asset('/libs/tingle/dist/tingle.css', 'preload:withFallback') }}
-        {{ asset('/libs/glightbox/dist/css/glightbox.css', 'preload:withFallback') }}
+        {{ asset('/libs/simplelightbox/dist/simple-lightbox.css', 'preload:withFallback') }}
     {% else %}
         {{ asset('/libs/tingle/dist/tingle.min.css', 'preload:withFallback') }}
-        {{ asset('/libs/glightbox/dist/css/glightbox.min.css', 'preload:withFallback') }}
+        {{ asset('/libs/simplelightbox/dist/simple-lightbox.min.css', 'preload:withFallback') }}
     {% endif %}
 
 {% endblock %}
@@ -58,7 +58,7 @@
                 </a>
             {% endif %}
 
-            <a class="button is-link is-light hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | ltrim('/') }}?download" aria-label="Download Zip">
+            <a class="button is-link is-light hint--bottom hint--rounded" href="{{ url.base }}/{{ index.relativePath() | ltrim('/') }}?download" download aria-label="Download Zip">
                 <i class="fas fa-fw fa-file-archive"></i> <i class="fas fa-fw fa-arrow-down"></i>
             </a>
         </div>
@@ -68,7 +68,6 @@
 {% endblock %}
 
 {% block main %}
-    <script>var elements = [];</script>
     <div class="container is-fluid index">
 
         {% if config.highlights > 0 %}
@@ -151,59 +150,48 @@
                     </tr>
 
                 {% else %}
-                    {% set hasLightbox = fileMetaData.type() in ['video', 'image'] %}
 
-                    {% if hasLightbox %}
-                        <tr id="{{ file.path().filename }}" class="clickableRow glightbox" href="{{ url.current }}/{{ file.path().filename | url_encode }}">
-                    {% else %}
-                        <tr id="{{ file.path().filename }}" class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
-                    {% endif %}
+                    <tr id="{{ file.path().filename }}" class="clickableRow" data-uri="{{ url.current }}/{{ file.path().filename | url_encode }}">
 
-                    <td>
-                        {% if fileMetaData.supportsThumbnail() %}
-                            <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
-                        {% else %}
-                            <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
-                        {% endif %}
-                    </td>
+                        <td>
+                            {% if fileMetaData.supportsThumbnail() %}
+                                <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
+                            {% else %}
+                                <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
+                            {% endif %}
+                        </td>
 
-                    <td data-sort-column-key="name" data-sort='{{ file.path().filename }}'>
-                        {% if hasLightbox %}
-                            <a class="glightbox" href="{{ url.current }}/{{ file.path().filename | url_encode }}" data-gallery="gallery-index">
-                                <span class="filename">{{ file.path().filename }}</span>
-                            </a>
-                        {% else %}
+                        <td data-sort-column-key="name" data-sort='{{ file.path().filename }}'>
                             <a href="{{ url.current }}/{{ file.path().filename | url_encode }}">
                                 <span class="filename">{{ file.path().filename }}</span>
                             </a>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a class="is-pulled-right button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}?download">
-                            <i class="fas fa-download"></i>
-                        </a>
-                    </td>
+                        </td>
+                        <td>
+                            <a class="is-pulled-right button is-black is-light" href="{{ url.current }}/{{ file.path().filename | url_encode }}?download" download>
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </td>
 
-                    <td data-sort-column-key="type">
-                        {{ fileMetaData.type() }}
-                    </td>
+                        <td data-sort-column-key="type">
+                            {{ fileMetaData.type() }}
+                        </td>
 
-                    {% set mtime = (fileMetaData.timeLastModified() ?? file.getTime()) %}
-                    <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
-                        {{ mtime | date('d.m.Y H:i:s') }}
-                    </td>
+                        {% set mtime = (fileMetaData.timeLastModified() ?? file.getTime()) %}
+                        <td data-sort-column-key="modified" data-sort='{{ mtime }}'>
+                            {{ mtime | date('d.m.Y H:i:s') }}
+                        </td>
 
-                    <td data-sort-column-key="size" data-sort='{{ fileMetaData.size() }}'>
-                        {{ fileMetaData.size() | format_bytes(1) }}
+                        <td data-sort-column-key="size" data-sort='{{ fileMetaData.size() }}'>
+                            {{ fileMetaData.size() | format_bytes(1) }}
 
-                        {% if dirMetaData.isCached('size') %}
-                            <progress class="progress is-accent is-small" value="{{ fileMetaData.size() }}" max="{{ dirMetaData.size() }}">TODO%</progress>
-                        {% endif %}
-                    </td>
+                            {% if dirMetaData.isCached('size') %}
+                                <progress class="progress is-accent is-small" value="{{ fileMetaData.size() }}" max="{{ dirMetaData.size() }}">TODO%</progress>
+                            {% endif %}
+                        </td>
 
-                    <td class="has-text-centered">
-                        <a class="button is-black is-light view-modal-info" aria-label="View Info" href="{{ url.current }}/{{ file.path().filename | url_encode }}?info"><i class="fas fa-ellipsis-h"></i></a>
-                    </td>
+                        <td class="has-text-centered">
+                            <a class="button is-black is-light view-modal-info" aria-label="View Info" href="{{ url.current }}/{{ file.path().filename | url_encode }}?info"><i class="fas fa-ellipsis-h"></i></a>
+                        </td>
                     </tr>
 
                 {% endif %}
@@ -243,14 +231,14 @@
 
     {% if config.debug %}
         {{ asset('/libs/tingle/dist/tingle.js') }}
-        {{ asset('/libs/glightbox/dist/js/glightbox.js', 'inline') }}
+        {{ asset('/libs/simplelightbox/dist/simple-lightbox.js', 'inline') }}
     {% else %}
         {{ asset('/libs/tingle/dist/tingle.min.js') }}
-        {{ asset('/libs/glightbox/dist/js/glightbox.min.js', 'inline') }}
+        {{ asset('/libs/simplelightbox/dist/simple-lightbox.min.js', 'inline') }}
     {% endif %}
 
     <script type="text/javascript">
-        const lightboxGalleryHighlights = GLightbox({});
+        new SimpleLightbox('.file-highlights a', {});
     </script>
 
 {% endblock %}

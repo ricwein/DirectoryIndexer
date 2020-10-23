@@ -44,21 +44,12 @@ tr.clickableRow {
   background-color: rgba(160, 160, 160, 0.55) !important;
 
   &:before {
-    backdrop-filter: blur(3px) !important;
-    -webkit-backdrop-filter: blur(3px) !important;
+    backdrop-filter: blur(0.15rem) !important;
+    -webkit-backdrop-filter: blur(0.15rem) !important;
   }
 }
 
-.glightbox-container {
-  .goverlay {
-    background: rgba(160, 160, 160, 0.55) !important;
-    backdrop-filter: blur(3px) !important;
-    -webkit-backdrop-filter: blur(3px) !important;
-  }
-
-  .gslide-description {
-    &, .gslide-title, .gslide-desc {
-      color: $color-light-foreground !important;
-    }
-  }
+.sl-overlay {
+  backdrop-filter: blur(0.15rem) !important;
+  -webkit-backdrop-filter: blur(0.15rem) !important;
 }

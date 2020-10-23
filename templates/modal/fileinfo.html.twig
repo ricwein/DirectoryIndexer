@@ -5,7 +5,7 @@
 </h1>
 
 <div class="content">
-    <table class="table is-hoverable is-fullwidth">
+    <table class="table is-hoverable is-fullwidth file-info">
         <tbody>
 
         <tr>
@@ -18,6 +18,11 @@
                 <td class="data-attribute"><strong>MimeType</strong></td>
                 <td class="data-value">{{ metaData.mimeType() ?? '-' }}</td>
             </tr>
+
+            <tr>
+                <td colspan="2"></td>
+            </tr>
+
             <tr>
                 <td class="data-attribute"><strong>MD5</strong></td>
                 <td class="data-value">{{ metaData.hashMD5() }}</td>
@@ -29,6 +34,19 @@
             <tr>
                 <td class="data-attribute"><strong>SHA256</strong></td>
                 <td class="data-value">{{ metaData.hashSHA256() }}</td>
+            </tr>
+
+            <tr>
+                <td colspan="2"></td>
+            </tr>
+
+            <tr title="{{ metaData.timeCreated() | date('d.m.Y H:i:s') }}">
+                <td class="data-attribute"><strong>Created</strong></td>
+                <td class="data-value">{{ metaData.timeCreated() | date('d.m.Y H:i') }}</td>
+            </tr>
+            <tr title="{{ metaData.timeLastModified() | date('d.m.Y H:i:s') }}">
+                <td class="data-attribute"><strong>Last Modified</strong></td>
+                <td class="data-value">{{ metaData.timeLastModified() | date('d.m.Y H:i') }}</td>
             </tr>
         {% endif %}
 

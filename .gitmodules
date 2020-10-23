@@ -13,6 +13,6 @@
 [submodule "assets/libs/tingle"]
 	path = assets/libs/tingle
 	url = https://github.com/robinparisi/tingle.git
-[submodule "assets/libs/glightbox"]
-	path = assets/libs/glightbox
-	url = https://github.com/biati-digital/glightbox.git
+[submodule "assets/libs/simplelightbox"]
+	path = assets/libs/simplelightbox
+	url = https://github.com/andreknieriem/simplelightbox.git

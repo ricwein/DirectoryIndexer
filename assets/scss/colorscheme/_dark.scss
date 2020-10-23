@@ -47,23 +47,25 @@ tr.clickableRow {
   background-color: transparent !important;
 
   &:before {
-    backdrop-filter: blur(5px) !important;
-    -webkit-backdrop-filter: blur(5px) !important;
+    backdrop-filter: blur(0.1rem) !important;
+    -webkit-backdrop-filter: blur(0.1rem) !important;
   }
 }
 
-.glightbox-container {
-  .goverlay {
-    background: transparent !important;
-    backdrop-filter: blur(5px) !important;
-    -webkit-backdrop-filter: blur(5px) !important;
+.sl-overlay {
+  backdrop-filter: blur(0.1rem) !important;
+  -webkit-backdrop-filter: blur(0.1rem) !important;
+}
+
+.simple-lightbox {
+  .sl-close {
+    background-color: rgba(black, 0.6);
+    border-radius: 0.5rem;
+    backdrop-filter: blur(0.3rem) !important;
+    -webkit-backdrop-filter: blur(0.3rem) !important;
   }
 
-  .gslide-description {
-    background-color: mix(dimgray, $color-dark-background, 0.1) !important;
-
-    &, .gslide-title, .gslide-desc {
-      color: $color-dark-foreground !important;
-    }
+  .sl-navigation *, .sl-close {
+    color: white !important;
   }
 }

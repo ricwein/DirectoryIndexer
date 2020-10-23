@@ -143,6 +143,7 @@ class Router
                 break;
 
             case FastRoute\Dispatcher::FOUND:
+                /** @noinspection MultiAssignmentUsageInspection */
                 $handler = $routeInfo[1];
                 $vars = $routeInfo[2];
                 call_user_func_array($handler, $vars);

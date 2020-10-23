@@ -54,7 +54,7 @@ class Search
         }
 
         /** @var Storage\Disk[] $storages */
-        if (preg_match('/^(.+):(.+)$/i', $searchTerm, $matches) === 1 && count($matches) === 3) {
+        if (preg_match('/^(.+):(.+)$/', $searchTerm, $matches) === 1 && count($matches) === 3) {
             $filter = strtolower(trim($matches[1]));
             $filterValue = trim($matches[2]);
 
