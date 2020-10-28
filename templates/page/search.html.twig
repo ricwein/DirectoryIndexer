@@ -92,7 +92,7 @@
                     <tr id="{{ file.path().filepath | ltrim('/') }}" class="clickableRow" data-uri="{{ url.base }}/{{ file.path().filepath | url_encode }}">
                         <td>
                             {% if fileMetaData.supportsThumbnail() %}
-                                <img class="thumbnail" loading="lazy" src="{{ url.base }}/{{ file.path().filepath | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
+                                <img class="thumbnail" width="24px" height="24px" loading="lazy" src="{{ url.base }}/{{ file.path().filepath | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
                             {% else %}
                                 <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
                             {% endif %}

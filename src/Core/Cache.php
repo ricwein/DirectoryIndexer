@@ -47,7 +47,7 @@ class Cache
     /**
      * @var ExtendedCacheItemPoolInterface
      */
-    protected ?ExtendedCacheItemPoolInterface $cache = null;
+    protected ExtendedCacheItemPoolInterface $cache;
 
     /**
      * @param string $engine cache-type

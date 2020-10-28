@@ -155,7 +155,7 @@
 
                         <td>
                             {% if fileMetaData.supportsThumbnail() %}
-                                <img class="thumbnail" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
+                                <img class="thumbnail" width="24px" height="24px" loading="lazy" src="{{ url.current }}/{{ file.path().filename | url_encode }}?thumbnail" alt="Thumbnail {{ file.path().filename }}"/>
                             {% else %}
                                 <i class="thumbnail {{ fileMetaData.faIcon() }}"></i>
                             {% endif %}
