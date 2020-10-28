@@ -9,6 +9,7 @@ stages:
 #jobs:
 Build:
   stage: build
+  needs: [ ]
   tags:
     - docker
     - docker-compose
@@ -19,6 +20,7 @@ Build:
 
 Deploy:
   stage: deploy
+  needs: [ "Build" ]
   environment:
     name: production
   tags:
@@ -33,6 +35,7 @@ Deploy:
 
 Collect Logs:
   stage: deploy
+  needs: [ "Deploy" ]
   environment:
     name: production
   when: manual
@@ -49,6 +52,7 @@ Collect Logs:
 
 Warmup Cache:
   stage: prepare
+  needs: [ "Deploy" ]
   environment:
     name: production
   tags:
@@ -62,6 +66,7 @@ Warmup Cache:
 
 Update Cache:
   stage: prepare
+  needs: [ "Deploy" ]
   environment:
     name: production
   tags:
