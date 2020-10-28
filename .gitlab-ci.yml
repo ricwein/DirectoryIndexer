@@ -4,7 +4,8 @@ variables:
 stages:
   - build
   - deploy
-  - prepare
+  - setup
+  - maintenance
 
 #jobs:
 build_images:
@@ -33,8 +34,22 @@ deploy_containers:
   except:
     - schedules
 
+warmup_container_caches:
+  stage: setup
+  needs: [ "deploy_containers" ]
+  environment:
+    name: production
+  tags:
+    - deploy
+    - docker
+    - docker-compose
+  script:
+    - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE exec -T php-fpm sh -c "./bin/console cache:warmup --CI --force-index"
+  except:
+    - schedules
+
 collect_container_logs:
-  stage: deploy
+  stage: maintenance
   needs: [ "deploy_containers" ]
   environment:
     name: production
@@ -50,22 +65,8 @@ collect_container_logs:
   except:
     - schedules
 
-warmup_container_caches:
-  stage: prepare
-  needs: [ "deploy_containers" ]
-  environment:
-    name: production
-  tags:
-    - deploy
-    - docker
-    - docker-compose
-  script:
-    - docker-compose -f docker-compose.base.yml -f $CONFIG_DOCKER_COMPOSE exec -T php-fpm sh -c "./bin/console cache:warmup --CI --force-index"
-  except:
-    - schedules
-
 refresh_container_caches:
-  stage: prepare
+  stage: maintenance
   needs: [ "deploy_containers" ]
   environment:
     name: production
