@@ -22,7 +22,7 @@ RUN apk add --update --no-cache --virtual .persistent-deps \
 RUN apk add --update --no-cache --virtual .build-deps autoconf g++ make libxml2-dev libpng-dev freetype-dev libjpeg-turbo-dev \
     && docker-php-ext-configure opcache --enable-opcache && docker-php-ext-install opcache \
     && docker-php-ext-configure zip && docker-php-ext-install zip \
-    && docker-php-ext-configure gd && docker-php-ext-install gd \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install gd \
     && pecl install redis && docker-php-ext-enable redis \
     && apk del .build-deps && rm -rf /var/cache/apk/* /tmp/pear/ /tmp/*
 
