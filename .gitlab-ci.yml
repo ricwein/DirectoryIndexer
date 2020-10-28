@@ -7,7 +7,7 @@ stages:
   - prepare
 
 #jobs:
-Build:
+build_images:
   stage: build
   needs: [ ]
   tags:
@@ -18,9 +18,9 @@ Build:
   except:
     - schedules
 
-Deploy:
+deploy_containers:
   stage: deploy
-  needs: [ "Build" ]
+  needs: [ "build_images" ]
   environment:
     name: production
   tags:
@@ -33,9 +33,9 @@ Deploy:
   except:
     - schedules
 
-Collect Logs:
+collect_container_logs:
   stage: deploy
-  needs: [ "Deploy" ]
+  needs: [ "deploy_containers" ]
   environment:
     name: production
   when: manual
@@ -50,9 +50,9 @@ Collect Logs:
   except:
     - schedules
 
-Warmup Cache:
+warmup_container_caches:
   stage: prepare
-  needs: [ "Deploy" ]
+  needs: [ "deploy_containers" ]
   environment:
     name: production
   tags:
@@ -64,9 +64,9 @@ Warmup Cache:
   except:
     - schedules
 
-Update Cache:
+refresh_container_caches:
   stage: prepare
-  needs: [ "Deploy" ]
+  needs: [ "deploy_containers" ]
   environment:
     name: production
   tags:
