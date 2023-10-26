@@ -1,7 +1,0 @@
-@import "base";
-
-@import "colorscheme/light";
-
-@media (prefers-color-scheme: dark) {
-  @import "colorscheme/dark";
-}

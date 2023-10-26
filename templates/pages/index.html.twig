@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    {{ parent() }}
+    <div class="sm:px-0 md:px-6 lg:px-12 xl:px-30 mt-12 mb-12">
+        <table class="w-full text-sm text-left relative text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900">
+            <thead class="text-xs sticky top-24 text-gray-700 position:sticky top:0 uppercase bg-slate-200 dark:bg-gray-800 dark:text-gray-400 z-20">
+            <tr>
+                <th scope="col" class="px-6 py-3">File</th>
+                <th scope="col" class="px-6 py-3">Size</th>
+                <th scope="col" class="px-6 py-3">Last Modified</th>
+                <th scope="col" class="px-6 py-3">Action</th>
+            </tr>
+            </thead>
+            <tbody {{ stimulus_controller('file-row') }}>
+                {% include 'components/row.html.twig' with {
+                    url: url('app_index', {path: directoryPath | trim('/')  ~ '/..'}),
+                    image: '<i class="fa-solid fa-arrow-turn-up fa-xl pl-3.5 pt-4 h-10 w-10 rounded-full bg-slate-800"></i>',
+                    file: {
+                        name: '/..',
+                    }
+                } only %}
+                {% for fileEntry in files %}
+                    {% include 'components/row.html.twig' with {
+                        url: url('app_index', {path: fileEntry.relativePath}),
+                        imageUrl: 'https://picsum.photos/seed/' ~ fileEntry.file.filename ~ '/40/',
+                        id: fileEntry.filenameHash,
+                        file: {
+                            name: fileEntry.file.filename ~ (fileEntry.file.type == 'dir' ? '/' : ''),
+                            type: fileEntry.fileType.value,
+                            size: fileEntry.file.type == 'dir' ? null : (fileEntry.file.size ~ ' b'),
+                            time: {
+                                m: date(fileEntry.file.mTime)
+                            }
+                        }
+                    } only %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

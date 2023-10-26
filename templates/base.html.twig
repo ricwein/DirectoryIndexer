@@ -1,114 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    {% block head %}
+    <meta charset="UTF-8">
+    <title>{% block title %}DirectoryIndex{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>📂</text></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <meta charset="utf-8">
-        <meta name="viewport" content="user-scalable=0, minimum-scale=1, maximum-scale=1, initial-scale=1, width=device-width"/>
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        {# The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags #}
+    {% block stylesheets %}
+        {{ encore_entry_link_tags('app') }}
+    {% endblock %}
 
-        {# Document Title #}
-        <title>{% block title %}{{ template.name | capitalize }}{% endblock %}</title>
-        <meta name="description" content="Index of {{ http.getDomain() }}">
-        <meta name=robots content="index, follow">
-
-        {# Base URL to use for all relative URLs contained within the document #}
-        <base href="{{ url.base }}">
-
-        {# mobile-friendly meta-data collection #}
-        {% set name = 'index' %}
-        {% include 'head_meta.html.twig' with {'name': name, 'url': url} only %}
-
-        {# favicons #}
-        <link rel="shortcut icon" href="{{ url.base }}/favicon.ico"/>
-        <link rel="icon" type="image/png" sizes="64x64" href="{{ url.base }}/favicon.png"/>
-
-        {# stylesheet assets #}
-        {% if config.development %}
-            {{ asset('/libs/bulma/css/bulma.css', 'preload:withFallback') }}
-        {% else %}
-            {{ asset('/libs/bulma/css/bulma.min.css', 'preload:withFallback') }}
-        {% endif %}
-
-        {% if config.views.theme == 'system' %}
-            {{ asset('/scss/style.scss', 'preload:withFallback') }}
-        {% elseif config.views.theme == 'dark' %}
-            {{ asset('/scss/dark.scss', 'preload:withFallback') }}
-        {% elseif config.views.theme == 'light' %}
-            {{ asset('/scss/light.scss', 'preload:withFallback') }}
-        {% endif %}
-
-        {{ asset('/libs/font-awesome/css/all.css', 'preload:withFallback') }}
-
+    {% block javascripts %}
+        {{ encore_entry_script_tags('app') }}
     {% endblock %}
 </head>
-
-<body class="has-navbar-fixed-top">
-{% block body %}
-    <div id="header">
-        {% block header %}
-            {% block navbar %}
-                <nav class="navbar main-nav is-fixed-top" role="navigation" aria-label="main navigation">
-                    <div class="container is-fluid">
-
-                        <div class="navbar-brand">
-                            <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
-                                <span aria-hidden="true"></span>
-                                <span aria-hidden="true"></span>
-                                <span aria-hidden="true"></span>
-                            </a>
+<body class="dark:bg-gray-900">
+{% block navbar %}
+    <nav class="bg-white border-gray-200 px-2 h-24 sm:px-4 py-2.5 rounded dark:bg-gray-900 sticky top-0 z-30">
+        <div class="container flex flex-wrap items-center justify-between mx-auto">
+            <a href="{{ url('app_index', {path: ''}) }}" class="flex items-center">
+                <img src="https://picsum.photos/seed/{{ random('abcdefghijklmnopqrstuvwxyz124567890') }}/40/" class="h-6 mr-3 sm:h-9 rounded-full" alt="Directory-Index"/>
+                <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">{{ directoryPath }}</span>
+            </a>
+            <button data-collapse-toggle="navbar-default" type="button"
+                    class="inline-flex items-center p-2 ml-3 text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+                    aria-controls="navbar-default" aria-expanded="false">
+                <span class="sr-only">Open main menu</span>
+                <i class="fa-solid fa-bars fa-lg w-6 h-6"></i>
+            </button>
+            <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+                <ul class="flex flex-col p-4 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:text-sm md:font-medium md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+                    <li>
+                        <a
+                                class="w-full sm:w-auto py-2 px-3 bg-blue-900 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow focus:outline-none"
+                                type="button"
+                                href="#">
+                            <i class="fa-solid fa-ellipsis-h"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                                class="w-full sm:w-auto py-2 px-3 bg-blue-900 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow focus:outline-none cursor-pointer"
+                                type="button"
+                                href="#">
+                            <i class="fa-solid fa-fw fa-file-archive"></i>
+                            <i class="fa-solid fa-fw fa-arrow-down"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <div class="relative mx-auto text-gray-600 lg:block hidden">
+                            <input class="border-2 border-gray-300 dark:border-blue-900 bg-white h-10 pl-2 pr-8 rounded-lg text-sm focus:outline-none dark:bg-gray-900" type="search" name="search" placeholder="Search">
+                            <button type="submit" class="absolute right-0 top-0 mt-3 mr-2">
+                                <i class="fa-solid fa-search text-gray-600 h-4 w-4 fill-current"></i>
+                            </button>
                         </div>
-
-                        <div id="navbarMenu" class="navbar-menu">
-                            <div class="navbar-start">
-                                <div class="navbar-item">
-                                    {% block site_title %}
-                                        <h1 class="buttons title is-5">
-                                            <a class="navbar-link is-arrowless logo" href="{{ url.base }}">
-                                                <strong>Index</strong>
-                                            </a>
-                                        </h1>
-                                    {% endblock %}
-                                </div>
-                            </div>
-
-                            <div class="navbar-end">
-
-                                {% block navbar_items %}
-                                    <form class="navbar-item field has-addons" method="get" action="{{ url.base }}/search/">
-                                        {% block search_input %}
-                                            <div class="control has-icons-left">
-                                                <span class="icon is-left"><label for="search" aria-label="Search"><i class="fas fa-search"></i></label></span>
-                                                <input class="input" type="search" id="search" name="subject" placeholder="Search..." value="{% block search_subject %}{% endblock %}">
-                                            </div>
-                                            <div class="control">
-                                                <button type="submit" class="button is-black" id="search_button" style="width: 100px" onclick="updateSearchButton();">Search</button>
-                                            </div>
-                                        {% endblock %}
-                                    </form>
-                                {% endblock %}
-
-                            </div>
-                        </div>
-
-                    </div>
-                </nav>
-            {% endblock %}
-
-        {% endblock %}
-    </div>
-
-    {% block main %}
-    {% endblock %}
-
-    {# section for late-loading scripts etc. #}
-    {% block footer %}
-    {% endblock %}
-
-    {{ asset('/js/scripts.js', 'inline') }}
-    {{ asset('/js/navbar.js') }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 {% endblock %}
+{% block body %}{% endblock %}
 </body>
 </html>
-

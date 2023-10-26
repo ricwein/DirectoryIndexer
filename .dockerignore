@@ -1,3 +1,6 @@
-.git
-vendor
-var
+/var/cache
+/var/log
+/.gitignore
+/.git
+/node_modules
+/vendor

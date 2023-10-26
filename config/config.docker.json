@@ -1,4 +1,0 @@
-{
-  "path": "/index",
-  "cache": {"engine": "redis", "redis": {"host": "redis"}}
-}

@@ -1,5 +1,21 @@
-/docker-compose.override.yml
-/.idea
+.*
+~*
+!/.gitignore
+!/.gitattributes
+!/.gitmodules
+!/.gitlab/
+!.indexignore
+
+/.idea/
+/.vscode/
+/.build/
+
+*~
+.Trash-*
+*.DS_Store
+._*
+
+docker-compose.override.yml
 
 ###> symfony/framework-bundle ###
 /.env.local
@@ -11,9 +27,16 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
+###> symfony/phpunit-bridge ###
+.phpunit.result.cache
+/phpunit.xml
+###< symfony/phpunit-bridge ###
+
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
 /public/build/
 npm-debug.log
 yarn-error.log
 ###< symfony/webpack-encore-bundle ###
+
+!.eslintrc.json

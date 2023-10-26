@@ -1,17 +1,9 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
+use App\Kernel;
 
-use ricwein\Indexer\Config\Config;
-use ricwein\Indexer\Core\Router;
+require_once dirname(__DIR__) . '/vendor/autoload_runtime.php';
 
-$config = Config::getInstance();
-$router = new Router($config);
-
-try {
-    $router->setup();
-    $router->dispatch();
-} catch (Exception|Error $exception) {
-    $router->handleException($exception);
-}
-
+return static function (array $context) {
+    return new Kernel($context['APP_ENV'], (bool)$context['APP_DEBUG']);
+};
