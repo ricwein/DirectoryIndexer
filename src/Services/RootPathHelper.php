@@ -4,21 +4,31 @@ namespace App\Services;
 
 use SplFileInfo;
 
-class PathHelper
+readonly class RootPathHelper
 {
-    public function __construct(private readonly string $appIndexPath)
+    private string $appIndexPath;
+
+    public function __construct(string $appIndexPath)
     {
+        $this->appIndexPath = rtrim(realpath($appIndexPath), '/') . '/';
+    }
+
+    public function normalizeRelativePath(string $path): string
+    {
+        $relativePath = str_replace(['/..', '../'], '/', $path);
+        $relativePath = preg_replace('/\/+/', '/', $relativePath);
+        return ltrim($relativePath, '/');
     }
 
     public function loadPath(string $relativePath): SplFileInfo
     {
-        $relativePath = str_replace('/../', '/', $relativePath);
-
-        return new SplFileInfo(sprintf(
-            '%s/%s',
-            rtrim($this->appIndexPath, '/'),
-            ltrim($relativePath, '/')
-        ));
+        return new SplFileInfo(
+            sprintf(
+                '%s/%s',
+                rtrim($this->appIndexPath, '/'),
+                ltrim($this->normalizeRelativePath($relativePath), '/')
+            )
+        );
     }
 
     public function escapeFilename(string $filename): string

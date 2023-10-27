@@ -12,9 +12,9 @@ class AppExtension extends AbstractExtension
     public function getFilters(): array
     {
         return [
-            new TwigFilter('flip', 'array_flip'),
-            new TwigFilter('unique', 'array_unique'),
-            new TwigFilter('debug_type', 'get_debug_type'),
+            new TwigFilter('flip', array_flip(...)),
+            new TwigFilter('unique', array_unique(...)),
+            new TwigFilter('debug_type', get_debug_type(...)),
 
             new TwigFilter('formatFileSize', [FileRuntime::class, 'formatFileSize']),
         ];
@@ -23,8 +23,8 @@ class AppExtension extends AbstractExtension
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('flip', 'array_flip'),
-            new TwigFunction('debug_type', 'get_debug_type'),
+            new TwigFunction('flip', array_flip(...)),
+            new TwigFunction('debug_type', get_debug_type(...)),
 
             new TwigFunction('formatFileSize', [FileRuntime::class, 'formatFileSize']),
         ];

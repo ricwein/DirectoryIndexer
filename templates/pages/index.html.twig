@@ -13,28 +13,30 @@
             </tr>
             </thead>
             <tbody {{ stimulus_controller('file-row') }}>
+            {% if parentDir is not null %}
                 {% include 'components/row.html.twig' with {
-                    url: url('app_index', {path: directoryPath | trim('/')  ~ '/..'}),
+                    url: url('app_index', {path: parentDir.path.relativePath(rootPath) ~ '/'}),
                     image: '<i class="fa-solid fa-arrow-turn-up fa-xl pl-3.5 pt-4 h-10 w-10 rounded-full bg-slate-800"></i>',
                     file: {
                         name: '/..',
                     }
                 } only %}
-                {% for fileEntry in files %}
-                    {% include 'components/row.html.twig' with {
-                        url: url('app_index', {path: fileEntry.relativePath}),
-                        imageUrl: 'https://picsum.photos/seed/' ~ fileEntry.file.filename ~ '/40/',
-                        id: fileEntry.filenameHash,
-                        file: {
-                            name: fileEntry.file.filename ~ (fileEntry.file.type == 'dir' ? '/' : ''),
-                            type: fileEntry.fileType.value,
-                            size: fileEntry.file.type == 'dir' ? null : (fileEntry.file.size ~ ' b'),
-                            time: {
-                                m: date(fileEntry.file.mTime)
-                            }
+            {% endif %}
+            {% for fileInfo in files %}
+                {% include 'components/row.html.twig' with {
+                    url: url('app_index', {path: fileInfo.file.path.relativePath(rootPath) ~ (fileInfo.file.isDir ? '/' : '')}),
+                    imageUrl: 'https://picsum.photos/seed/' ~ fileInfo.file.path.filename ~ '/40/',
+                    id: fileInfo.id,
+                    file: {
+                        name: fileInfo.file.path.filename ~ (fileInfo.file.isDir ? '/' : ''),
+                        type: fileInfo.file.path.type,
+                        size: fileInfo.file.isDir ? null : (fileInfo.file.path.size ~ ' b'),
+                        time: {
+                            m: date(fileInfo.file.time(enum('ricwein\\FileSystem\\Enum\\Time::LAST_MODIFIED')))
                         }
-                    } only %}
-                {% endfor %}
+                    }
+                } only %}
+            {% endfor %}
             </tbody>
         </table>
     </div>

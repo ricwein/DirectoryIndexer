@@ -22,14 +22,14 @@ class FileSize
 
     public static function from(null|false|string|int $size): ?self
     {
-        return ($size === null || $size === false) ? null : new self($size);
+        return ($size === false || !is_numeric($size)) ? null : new self($size);
     }
 
     public function __construct(string|int $size)
     {
         $this->bytes = (int)$size;
 
-        $this->factor = floor((strlen((string)($this->bytes ?? 0)) - 1) / 3);
+        $this->factor = floor((strlen((string)$this->bytes) - 1) / 3);
 
         $units = self::MEMORY_UNITS[(int)($this->factor * 10)];
         $this->unit = reset($units);

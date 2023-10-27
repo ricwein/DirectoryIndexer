@@ -2,11 +2,14 @@
 
 namespace App\Controller;
 
-use App\Model\File;
-use App\Services\PathHelper;
-use SplFileInfo;
+use App\Model\FileInfo;
+use App\Services\RootPathHelper;
+use Generator;
+use ricwein\FileSystem\Directory;
+use ricwein\FileSystem\File;
+use ricwein\FileSystem\Helper\Constraint;
+use ricwein\FileSystem\Storage;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -15,20 +18,24 @@ use Symfony\Component\Routing\Annotation\Route;
 class IndexController extends AbstractController
 {
     public function __construct(
-        private readonly PathHelper $pathHelper,
-        private readonly string     $appIndexPath
-    )
-    {
-    }
+        private readonly RootPathHelper $pathHelper,
+        private readonly string $appIndexPath
+    ) {}
 
     #[Route(path: '/{path}', name: 'app_index', requirements: ['path' => '.*'], methods: 'GET')]
     public function view(string $path = ''): Response
     {
-        $fileInfo = $this->pathHelper->loadPath($path);
+        if (str_contains($path, '/..') || str_contains($path, '../') || str_contains($path, '//')) {
+            return $this->redirectToRoute('app_index', [
+                'path' => $this->pathHelper->normalizeRelativePath($path),
+            ]);
+        }
+
+        $storage = new Storage\Disk($this->appIndexPath, $path);
 
         return match (true) {
-            $fileInfo->isDir() => $this->showDirectory($fileInfo),
-            $fileInfo->isFile() => $this->showFile($fileInfo),
+            $storage->isDir() => $this->showDirectory(new Directory($storage)),
+            $storage->isFile() => $this->showFile(new File($storage)),
             default => new Response('File not found.', 404)
         };
     }
@@ -37,49 +44,54 @@ class IndexController extends AbstractController
     public function viewInfo(string $path = ''): Response
     {
         $fileInfo = $this->pathHelper->loadPath($path);
+        $file = new File(new Storage\Disk($fileInfo), Constraint::LOOSE);
         return $this->render('pages/fileInfo.html.twig', [
-            'file' => $fileInfo,
-            'hash' => $fileInfo->isDir() ? [] : [
-                'md5' => hash_file(algo: 'md5', filename: $fileInfo->getRealPath()),
-                'sha1' => hash_file(algo: 'sha1', filename: $fileInfo->getRealPath()),
-                'sha256' => hash_file(algo: 'sha256', filename: $fileInfo->getRealPath()),
-                'sha512' => hash_file(algo: 'sha512', filename: $fileInfo->getRealPath()),
-            ]
+            'file' => $file,
+            'hashes' => $file->isDir()
+                ? []
+                : array_map(
+                    static fn(string $algo) => $file->getHash(algo: $algo),
+                    ['md5' => 'md5', 'sha1' => 'sha1', 'sha256' => 'sha256', 'sha512' => 'sha512']
+                )
         ]);
     }
 
-    private function showFile(SplFileInfo $file): Response
+    private function showFile(File $file): Response
     {
         $response = new StreamedResponse(function () use ($file) {
-            $outputStream = fopen('php://output', 'wb');
-            $fileStream = fopen($file->getRealPath(), 'rb');
-            stream_copy_to_stream($fileStream, $outputStream);
+            $file->stream();
         });
 
-        $response->headers->set('Content-Type', mime_content_type($file->getRealPath()));
-        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
-            HeaderUtils::DISPOSITION_ATTACHMENT,
-            $file->getFilename(),
-            $this->pathHelper->escapeFilename($file->getFilename()),
-        ));
+        $response->headers->set('Content-Type', $file->getType(true));
+        $response->headers->set(
+            'Content-Disposition',
+            HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_ATTACHMENT,
+                $file->getPath()->getFilename(),
+                $this->pathHelper->escapeFilename($file->getPath()->getFilename()),
+            )
+        );
 
         return $response;
     }
 
-    private function showDirectory(SplFileInfo $directory): Response
+    /** @return Generator<FileInfo> */
+    private static function getDirectoryIterator(Directory $directory): Generator
     {
-        $files = (new Finder())
-            ->in($directory->getRealPath())
-            ->ignoreUnreadableDirs()
-            ->depth('== 0')
-            ->getIterator();
+        foreach ($directory->list()->all(constraints: Constraint::LOOSE) as $file) {
+            yield new FileInfo($file);
+        }
+    }
 
+    /** @noinspection PhpParamsInspection */
+    private function showDirectory(Directory $directory): Response
+    {
+        $isAtRootLevel = rtrim($directory->getPath()->getRealPath(), '/') === rtrim($this->appIndexPath, '/');
         return $this->render('pages/index.html.twig', [
-            'files' => array_map(
-                fn(\Symfony\Component\Finder\SplFileInfo $file): File => new File($this->appIndexPath, $file),
-                iterator_to_array($files)
-            ),
-            'directoryPath' => '/' . ltrim(str_replace(trim($this->appIndexPath, '/'), '', $directory->getRealPath()), '/'),
+            'rootPath' => $this->appIndexPath,
+            'files' => self::getDirectoryIterator($directory),
+            'directory' => $directory,
+            'parentDir' => $isAtRootLevel ? null : (new Directory(clone $directory->storage()))->up(),
         ]);
     }
 }

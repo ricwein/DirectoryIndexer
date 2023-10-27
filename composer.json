@@ -4,11 +4,12 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "require": {
-    "php": "^8.2",
     "ext-ctype": "*",
     "ext-fileinfo": "*",
     "ext-iconv": "*",
     "ext-intl": "*",
+    "php": "^8.2",
+    "ricwein/filesystem": "dev-master",
     "symfony/console": "6.3.*",
     "symfony/dotenv": "6.3.*",
     "symfony/flex": "^2",
@@ -22,7 +23,9 @@
     "twig/twig": "^3.7"
   },
   "require-dev": {
-    "roave/security-advisories": "dev-latest"
+    "roave/security-advisories": "dev-latest",
+    "symfony/stopwatch": "6.3.*",
+    "symfony/web-profiler-bundle": "6.3.*"
   },
   "config": {
     "allow-plugins": {

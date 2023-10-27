@@ -22,3 +22,4 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/app/:rw
+      - ./docker/php-fpm/xdebug.ini:/usr/local/etc/php/conf.d/zzzz_xdebug.ini:ro

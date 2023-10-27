@@ -1,28 +1,37 @@
 <div class="relative overflow-x-auto cursor-default">
     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+
         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
         <tr>
             <th class="px-20 py-6 text-right">File</th>
-            <th class="px-20 py-6">{{ file.filename }}</th>
+            <th class="px-20 py-6 truncate max-w-2xl">{{ file.path.filename }}</th>
         </tr>
         </thead>
+
         <tbody>
-        <tr class="bg-white  dark:bg-gray-800 dark:border-gray-700">
+        <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
             <td class="px-20 py-6 text-right">Size</td>
             <td class="px-20 py-6">{{ file.size | formatFileSize }}</td>
         </tr>
-        <tr class="bg-white  dark:bg-gray-800 dark:border-gray-700">
+        <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
             <td class="px-20 py-6 text-right">Created</td>
-            <td class="px-20 py-6">{{ file.cTime | date('d.m.Y H:i:s') }}</td>
+            <td class="px-20 py-6 truncate max-w-2xl">{{ file.path.cTime | date('d.m.Y H:i:s') }}</td>
         </tr>
-        <tr class="bg-white  dark:bg-gray-800 dark:border-gray-700">
+        <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
             <td class="px-20 py-6 text-right">Last Modified</td>
-            <td class="px-20 py-6">{{ file.mTime | date('d.m.Y H:i:s') }}</td>
+            <td class="px-20 py-6 truncate max-w-2xl">{{ file.path.mTime | date('d.m.Y H:i:s') }}</td>
         </tr>
-        <tr class="bg-white  dark:bg-gray-800 dark:border-gray-700">
+        <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
             <td class="px-20 py-6 text-right">Last Accessed</td>
-            <td class="px-20 py-6">{{ file.aTime | date('d.m.Y H:i:s') }}</td>
+            <td class="px-20 py-6 truncate max-w-2xl">{{ file.path.aTime | date('d.m.Y H:i:s') }}</td>
         </tr>
+        {% for algo, hash in hashes %}
+            <tr class="bg-white dark:bg-gray-800 dark:border-gray-700">
+                <td class="px-20 py-6 text-right">{{ algo }}</td>
+                <td class="px-20 py-6 truncate max-w-2xl" title="{{ hash }}">{{ hash }}</td>
+            </tr>
+        {% endfor %}
         </tbody>
+
     </table>
 </div>
