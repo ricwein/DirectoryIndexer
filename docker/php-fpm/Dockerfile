@@ -36,4 +36,6 @@ ENV PATH="${PATH}:/root/.composer/vendor/bin"
 RUN composer install --prefer-dist --no-progress --no-interaction --optimize-autoloader --no-scripts --no-dev
 RUN composer dump-autoload --classmap-authoritative --no-dev
 
+RUN bin/console app:regenerate-secret '.env' --env=PROD
+
 COPY ./docker/php-fpm/xdebug.ini ${PHP_INI_DIR}/conf.d/zzzz_xdebug.ini

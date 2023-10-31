@@ -1,6 +1,9 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
+    {# @var parentDir \ricwein\FileSystem\Directory #}
+    {# @var fileInfo \App\Model\FileInfo #}
+
     {{ parent() }}
     <div class="sm:px-0 md:px-6 lg:px-12 xl:px-30 mt-12 mb-12">
         <table class="w-full text-sm text-left relative text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900">
@@ -15,26 +18,17 @@
             <tbody {{ stimulus_controller('file-row') }}>
             {% if parentDir is not null %}
                 {% include 'components/row.html.twig' with {
-                    url: url('app_index', {path: parentDir.path.relativePath(rootPath) ~ '/'}),
+                    url: url('app_index', {path: parentDir.path.relativePathToSafePath}),
                     image: '<i class="fa-solid fa-arrow-turn-up fa-xl pl-3.5 pt-4 h-10 w-10 rounded-full bg-slate-800"></i>',
-                    file: {
-                        name: '/..',
-                    }
+                    name: '/..'
                 } only %}
             {% endif %}
             {% for fileInfo in files %}
                 {% include 'components/row.html.twig' with {
-                    url: url('app_index', {path: fileInfo.file.path.relativePath(rootPath) ~ (fileInfo.file.isDir ? '/' : '')}),
+                    url: url('app_index', {path: fileInfo.file.path.relativePathToSafePath}),
                     imageUrl: 'https://picsum.photos/seed/' ~ fileInfo.file.path.filename ~ '/40/',
                     id: fileInfo.id,
-                    file: {
-                        name: fileInfo.file.path.filename ~ (fileInfo.file.isDir ? '/' : ''),
-                        type: fileInfo.file.path.type,
-                        size: fileInfo.file.isDir ? null : (fileInfo.file.path.size ~ ' b'),
-                        time: {
-                            m: date(fileInfo.file.time(enum('ricwein\\FileSystem\\Enum\\Time::LAST_MODIFIED')))
-                        }
-                    }
+                    file: fileInfo.file
                 } only %}
             {% endfor %}
             </tbody>

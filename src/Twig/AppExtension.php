@@ -15,8 +15,6 @@ class AppExtension extends AbstractExtension
             new TwigFilter('flip', array_flip(...)),
             new TwigFilter('unique', array_unique(...)),
             new TwigFilter('debug_type', get_debug_type(...)),
-
-            new TwigFilter('formatFileSize', [FileRuntime::class, 'formatFileSize']),
         ];
     }
 
@@ -25,8 +23,6 @@ class AppExtension extends AbstractExtension
         return [
             new TwigFunction('flip', array_flip(...)),
             new TwigFunction('debug_type', get_debug_type(...)),
-
-            new TwigFunction('formatFileSize', [FileRuntime::class, 'formatFileSize']),
         ];
     }
 
@@ -39,6 +35,7 @@ class AppExtension extends AbstractExtension
             new TwigTest('array', fn(mixed $value) => is_array($value)),
             new TwigTest('bool', fn(mixed $value) => is_bool($value)),
             new TwigTest('scalar', fn(mixed $value) => is_scalar($value)),
+            new TwigTest('instanceof', fn(mixed $var, mixed $instanceof): bool => $var instanceof $instanceof),
         ];
     }
 }

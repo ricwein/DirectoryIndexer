@@ -23,3 +23,9 @@ services:
     volumes:
       - ./:/app/:rw
       - ./docker/php-fpm/xdebug.ini:/usr/local/etc/php/conf.d/zzzz_xdebug.ini:ro
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
