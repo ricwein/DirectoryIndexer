@@ -1,0 +1,64 @@
+table.file-table {
+  @apply
+  w-full
+  text-sm text-left
+  relative
+  text-gray-500 dark:text-gray-400
+  bg-white dark:bg-gray-900;
+
+  thead {
+    @apply
+    text-xs uppercase
+    sticky top-24 z-20
+    text-gray-700 dark:text-gray-400
+    bg-slate-200 dark:bg-gray-800;
+
+    th {
+      @apply px-6 py-3;
+    }
+  }
+
+  tbody {
+    tr {
+      @apply
+      border-b
+      cursor-pointer
+      hover:scale-102
+      transition duration-150 hover:duration-75 ease-in-out
+      opacity-75 hover:opacity-100
+      shadow hover:shadow-lg hover:shadow-indigo-800 dark:hover:shadow-blue-600
+      z-0 hover:z-50
+      bg-slate-100 dark:bg-gray-900 hover:bg-indigo-600 dark:hover:bg-blue-700
+      dark:border-gray-600;
+
+      th {
+        @apply px-6 py-4 flex items-center text-gray-900 whitespace-nowrap dark:text-white;
+
+        img, .icon {
+          @apply rounded-full;
+        }
+
+        .icon {
+          @apply pl-3.5 pt-4;
+        }
+      }
+
+      td {
+        &.file-time {
+          @apply px-6 py-4;
+          span {
+            @apply text-sm font-medium mr-2 px-3 py-0.5 rounded border;
+          }
+        }
+
+        &.file-size {
+          @apply px-6 py-4;
+        }
+
+        &.file-actions {
+          @apply pl-6 pr-0 py-0;
+        }
+      }
+    }
+  }
+}

@@ -2,34 +2,31 @@
 
 {% block body %}
     {# @var parentDir \ricwein\FileSystem\Directory #}
-    {# @var fileInfo \App\Model\FileInfo #}
-
-    {{ parent() }}
     <div class="sm:px-0 md:px-6 lg:px-12 xl:px-30 mt-12 mb-12">
-        <table class="w-full text-sm text-left relative text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900">
-            <thead class="text-xs sticky top-24 text-gray-700 position:sticky top:0 uppercase bg-slate-200 dark:bg-gray-800 dark:text-gray-400 z-20">
+        <table class="file-table">
+            <thead>
             <tr>
-                <th scope="col" class="px-6 py-3">File</th>
-                <th scope="col" class="px-6 py-3">Size</th>
-                <th scope="col" class="px-6 py-3">Last Modified</th>
-                <th scope="col" class="px-6 py-3">Action</th>
+                <th scope="col">File</th>
+                <th scope="col">Size</th>
+                <th scope="col">Last Modified</th>
+                <th scope="col">Action</th>
             </tr>
             </thead>
-            <tbody {{ stimulus_controller('file-row') }}>
+            <tbody>
             {% if parentDir is not null %}
                 {% include 'components/row.html.twig' with {
-                    url: url('app_index', {path: parentDir.path.relativePathToSafePath}),
+                    url: url('app_index', {path: parentDir.path.relativePath(rootPath)}),
                     image: '<i class="fa-solid fa-arrow-turn-up fa-xl pl-3.5 pt-4 h-10 w-10 rounded-full bg-slate-800"></i>',
                     name: '/..'
                 } only %}
             {% endif %}
-            {% for fileInfo in files %}
-                {% include 'components/row.html.twig' with {
-                    url: url('app_index', {path: fileInfo.file.path.relativePathToSafePath}),
-                    imageUrl: 'https://picsum.photos/seed/' ~ fileInfo.file.path.filename ~ '/40/',
-                    id: fileInfo.id,
-                    file: fileInfo.file
-                } only %}
+            {% for data in files %}
+                <tr is="vue:file-row"
+                    :file="{{ data.file | json_encode }}"
+                    :size="{{ data.size | json_encode }}"
+                    previewSize="40"
+                    url="{{ url('app_index', {path: data.file.file.path.relativePath(rootPath)}) }}"
+                ></tr>
             {% endfor %}
             </tbody>
         </table>

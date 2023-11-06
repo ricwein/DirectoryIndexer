@@ -11,7 +11,7 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 RUN apk add --update --no-cache acl fcgi file gettext gnu-libiconv
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
-RUN install-php-extensions opcache intl redis zip @composer
+RUN install-php-extensions opcache intl redis zip gd @composer
 RUN if [ "$APP_ENV" = "dev" ] ; then install-php-extensions xdebug ; fi
 
 # install gnu-libiconv and set LD_PRELOAD env to make iconv work fully on Alpine image.

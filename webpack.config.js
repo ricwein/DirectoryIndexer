@@ -1,4 +1,6 @@
 const Encore = require('@symfony/webpack-encore');
+const path = require('path');
+const webpack = require('webpack');
 
 // Manually configure the runtime environment if not already configured yet by the "encore" command.
 // It's useful when you use tools that rely on webpack.config.js file.
@@ -23,7 +25,6 @@ Encore
     .addEntry('app', './assets/app.js')
 
     // enables the Symfony UX Stimulus bridge (used in assets/bootstrap.js)
-    .enableStimulusBridge('./assets/controllers.json')
 
     // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
     // .splitEntryChunks()
@@ -63,6 +64,21 @@ Encore
 
     // uncomment if you use React
     //.enableReactPreset()
+    .enableVueLoader(
+        () => {
+        },
+        {runtimeCompilerBuild: true, version: 3}
+    )
+    .addPlugin(
+        new webpack.DefinePlugin({
+            __VUE_OPTIONS_API__: true,
+            __VUE_PROD_DEVTOOLS__: false
+        })
+    )
+    .addAliases({
+        '@': path.resolve('assets'),
+        vue$: 'vue/dist/vue.esm-bundler',
+    })
 
     // uncomment to get integrity="..." attributes on your script & link tags
     // requires WebpackEncoreBundle 1.4 or higher

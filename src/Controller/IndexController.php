@@ -2,17 +2,19 @@
 
 namespace App\Controller;
 
-use App\Model\CachedFileSystem\CacheableDirectory;
-use App\Model\FileInfo;
-use App\Service\CacheableFileSystem;
+use App\Model\DTO\File as FileDTO;
+use App\Model\DTO\Hashes;
+use App\Service\FileSystem;
 use Generator;
 use Psr\Cache\InvalidArgumentException;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\File;
+use ricwein\FileSystem\Model\FileSize;
 use ricwein\FileSystem\Storage;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -21,16 +23,9 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class IndexController extends AbstractController
 {
-    private const HASHES = [
-        'md5' => 'md5',
-        'sha1' => 'sha1',
-        'sha256' => 'sha256',
-        'sha512' => 'sha512'
-    ];
-
     public function __construct(
-        private readonly string $appIndexPath,
-        private readonly CacheableFileSystem $cachedFileSystem,
+        private readonly string $rootPath,
+        private readonly FileSystem $fileSystemService,
     ) {}
 
     /**
@@ -39,26 +34,19 @@ class IndexController extends AbstractController
     #[Route(path: '/{path}', name: 'app_index', requirements: ['path' => '.*'], methods: 'GET')]
     public function view(Request $request, string $path = ''): Response
     {
-        $storage = new Storage\Disk($this->appIndexPath, $path);
+        $storage = new Storage\Disk($this->rootPath, $path);
 
-        if ($request->query->get('preview')!==null) {
-            return $this->viewPreview($storage);
+        if ($request->query->get('preview') !== null) {
+            $size = (int)$request->query->get('wh', 40);
+            return $this->viewPreview($storage, $size);
         }
 
         // cleanup path in URL if required
-        if (
-            $path === '/'
-            || str_contains($path, '/..')
-            || str_contains($path, '../')
-            || str_contains($path, '//')
-        ) {
-            return $this->redirectToRoute('app_index', [
-                'path' => (new File($storage))->getPath()->getRelativePathToSafePath(),
-            ]);
+        if (null !== $redirect = $this->cleanupRoutePath('app_index', $path, $storage)) {
+            return $redirect;
         }
 
-        $file = $this->cachedFileSystem->get($storage);
-
+        $file = $this->fileSystemService->get($storage);
         return match (true) {
             $file instanceof Directory => $this->viewDirectory($file),
             $file instanceof File => $this->viewFile($file),
@@ -66,10 +54,48 @@ class IndexController extends AbstractController
         };
     }
 
-    private function viewPreview(Storage\BaseStorage $storage): Response
+    private function cleanupRoutePath(string $route, string $path, Storage\BaseStorage&Storage\FileStorageInterface $storage): ?RedirectResponse
     {
-        // TODO return file preview
-        return new Response("TODO $storage");
+        if (
+            $path === '/'
+            || str_contains($path, '/..')
+            || str_contains($path, '../')
+            || str_contains($path, '//')
+            || ($storage->isFile() && str_ends_with($path, '/'))
+            || (!empty(trim($path, '/')) && $storage->isDir() && !str_ends_with($path, '/'))
+        ) {
+            return $this->redirectToRoute($route, [
+                'path' => (new File($storage))->getPath()->getRelativePath($this->rootPath),
+            ], 301);
+        }
+        return null;
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function viewPreview(Storage\BaseStorage&Storage\FileStorageInterface $storage, int $size): Response
+    {
+        $preview = $this->fileSystemService->getPreview($storage, $size);
+        $response = new StreamedResponse(function () use ($preview): void {
+            $preview->stream();
+        });
+
+        $response->headers->set(
+            key: 'Content-Type',
+            values: $storage->getFileType() ?? 'application/octet-stream'
+        );
+        $response->headers->set(
+            key: 'Content-Disposition',
+            values: HeaderUtils::makeDisposition(
+                HeaderUtils::DISPOSITION_INLINE,
+                $storage->getPath()->getFilename(),
+                $storage->getPath()->getEscapedFilename(),
+            )
+        );
+
+        return $response;
+
     }
 
     /**
@@ -78,26 +104,25 @@ class IndexController extends AbstractController
     #[Route(path: '/{path}', name: 'app_file_info', requirements: ['path' => '.*'], methods: 'OPTIONS')]
     public function viewInfo(Request $request, string $path = ''): Response
     {
-        $storage = new Storage\Disk($this->appIndexPath, $path);
-        if (null === $file = $this->cachedFileSystem->get($storage)) {
-            new Response('File not found.', 404);
+        $storage = new Storage\Disk($this->rootPath, $path);
+        if (null === $file = $this->fileSystemService->get($storage)) {
+            return new Response('File not found.', 404);
         }
 
         if (null !== $attribute = $request->query->get('attr')) {
             return new JsonResponse(
-                data: [$attribute => match ($attribute) {
-                    'size' => $file->getSize(),
-                    'hashes' => array_map(static fn(string $algo) => $file->getHash(algo: $algo), self::HASHES),
+                data: match ($attribute) {
+                    'size' => $this->fileSystemService->getSize($file, true),
+                    'hashes' => $this->fileSystemService->getHashes($file, true),
                     default => throw new HttpException(400, "Invalid attribute '$attribute' requested."),
-                }],
+                },
                 status: 200
             );
         }
 
-
-        $hashes = $file?->isDir() ? [] : array_map(
+        $hashes = $file->isDir() ? [] : array_map(
             static fn(string $algo) => $file->getHash(algo: $algo),
-            self::HASHES
+            ['md5' => 'md5', 'sha1' => 'sha1', 'sha256' => 'sha256', 'sha512' => 'sha512']
         );
 
         return $this->render('pages/fileInfo.html.twig', [
@@ -126,29 +151,28 @@ class IndexController extends AbstractController
     }
 
     /**
-     * @return Generator<FileInfo>
+     * @return Generator<array{file: FileDTO, size: null|FileSize, hashes: null|Hashes}>
      * @throws InvalidArgumentException
      */
     private function getDirectoryIterator(Directory $directory): Generator
     {
         foreach ($directory->list()->storages() as $storage) {
-            if (null !== $file = $this->cachedFileSystem->get($storage)) {
-                yield new FileInfo($file);
+            if (null !== $data = $this->fileSystemService->getDTOs($storage, false)) {
+                yield $data;
             }
         }
     }
 
     /**
      * @noinspection PhpParamsInspection
-     * @throws InvalidArgumentException
      */
-    private function viewDirectory(CacheableDirectory $directory): Response
+    private function viewDirectory(Directory $directory): Response
     {
-        $isAtRootLevel = rtrim($directory->getPath()->getRealPath(), '/') === rtrim($this->appIndexPath, '/');
+        $isAtRootLevel = rtrim($directory->getPath()->getRealPath(), '/') === rtrim($this->rootPath, '/');
         $parent = $isAtRootLevel ? null : (new Directory(clone $directory->storage()))->up();
 
         return $this->render('pages/index.html.twig', [
-            'rootPath' => $this->appIndexPath,
+            'rootPath' => $this->rootPath,
             'files' => $this->getDirectoryIterator($directory),
             'directory' => $directory,
             'parentDir' => $parent,
