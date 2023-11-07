@@ -6,12 +6,13 @@
  */
 
 import 'flowbite';
-import './styles/app.scss';
+import '@/styles/app.scss';
 
 import {createApp} from 'vue'
-import fileRow from "./components/file-row.vue";
+import FileRow from "@/components/file-row.vue";
+import ParentRow from "@/components/parent-row.vue";
 
 const app = createApp({
-    components: {fileRow},
+    components: {FileRow, ParentRow},
 })
 app.mount('#app')

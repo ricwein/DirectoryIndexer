@@ -14,11 +14,9 @@
             </thead>
             <tbody>
             {% if parentDir is not null %}
-                {% include 'components/row.html.twig' with {
-                    url: url('app_index', {path: parentDir.path.relativePath(rootPath)}),
-                    image: '<i class="fa-solid fa-arrow-turn-up fa-xl pl-3.5 pt-4 h-10 w-10 rounded-full bg-slate-800"></i>',
-                    name: '/..'
-                } only %}
+                <tr is="vue:parent-row"
+                    url="{{ url('app_index', {path: parentDir.path.relativePath(rootPath)}) }}"
+                ></tr>
             {% endif %}
             {% for data in files %}
                 <tr is="vue:file-row"

@@ -5,9 +5,12 @@ namespace App\Controller;
 use App\Model\DTO\File as FileDTO;
 use App\Model\DTO\Hashes;
 use App\Service\FileSystem;
+use DateTimeImmutable;
 use Generator;
 use Psr\Cache\InvalidArgumentException;
 use ricwein\FileSystem\Directory;
+use ricwein\FileSystem\Enum\Hash;
+use ricwein\FileSystem\Enum\Time;
 use ricwein\FileSystem\File;
 use ricwein\FileSystem\Model\FileSize;
 use ricwein\FileSystem\Storage;
@@ -85,14 +88,14 @@ class IndexController extends AbstractController
             key: 'Content-Type',
             values: $storage->getFileType() ?? 'application/octet-stream'
         );
-        $response->headers->set(
-            key: 'Content-Disposition',
-            values: HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_INLINE,
-                $storage->getPath()->getFilename(),
-                $storage->getPath()->getEscapedFilename(),
-            )
-        );
+        $response
+            ->setLastModified(DateTimeImmutable::createFromFormat('U', $storage->getTime()))
+            ->setPublic()
+            ->setEtag(
+                md5(
+                    $storage->getTime() . $storage->getFileHash(Hash::FILEPATH, 'md5')
+                )
+            );
 
         return $response;
 
@@ -151,29 +154,18 @@ class IndexController extends AbstractController
     }
 
     /**
-     * @return Generator<array{file: FileDTO, size: null|FileSize, hashes: null|Hashes}>
      * @throws InvalidArgumentException
-     */
-    private function getDirectoryIterator(Directory $directory): Generator
-    {
-        foreach ($directory->list()->storages() as $storage) {
-            if (null !== $data = $this->fileSystemService->getDTOs($storage, false)) {
-                yield $data;
-            }
-        }
-    }
-
-    /**
      * @noinspection PhpParamsInspection
      */
     private function viewDirectory(Directory $directory): Response
     {
         $isAtRootLevel = rtrim($directory->getPath()->getRealPath(), '/') === rtrim($this->rootPath, '/');
         $parent = $isAtRootLevel ? null : (new Directory(clone $directory->storage()))->up();
+        $directoryIterator = $this->fileSystemService->iterate(directory: $directory);
 
         return $this->render('pages/index.html.twig', [
             'rootPath' => $this->rootPath,
-            'files' => $this->getDirectoryIterator($directory),
+            'files' => $directoryIterator,
             'directory' => $directory,
             'parentDir' => $parent,
         ]);

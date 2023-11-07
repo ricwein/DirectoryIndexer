@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Model\DTO\File as FileDTO;
 use App\Model\DTO\Hashes;
+use Generator;
 use Intervention\Image\Constraint as IConstraint;
 use Intervention\Image\Image as IImage;
 use Psr\Cache\CacheItemPoolInterface;
@@ -20,6 +21,8 @@ use ricwein\FileSystem\Storage\StorageInterface;
 
 readonly class FileSystem
 {
+    private const DEFAULT_FILE_CONSTRAINT = Constraint::IN_SAFEPATH | Constraint::IN_OPEN_BASEDIR;
+
     public function __construct(private CacheItemPoolInterface $cache) {}
 
     /**
@@ -29,7 +32,7 @@ readonly class FileSystem
     {
         return Creator::from(
             fileInfo: $storage,
-            constraint: Constraint::IN_SAFEPATH | Constraint::IN_OPEN_BASEDIR
+            constraint: self::DEFAULT_FILE_CONSTRAINT
         );
     }
 
@@ -100,7 +103,11 @@ readonly class FileSystem
      */
     public function getPreview(Storage\BaseStorage&Storage\FileStorageInterface $imageStorage, int $size): File\Image
     {
-        $image = new File\Image($imageStorage, Constraint::IN_SAFEPATH | Constraint::IN_OPEN_BASEDIR);
+        $image = new File\Image(
+            storage: $imageStorage,
+            constraints: self::DEFAULT_FILE_CONSTRAINT
+        );
+
         return $this->cache->get(
             key: sprintf('%1$s_%2$dx%2$d', self::getCacheKey('preview', $image), $size),
             callback: fn(): File\Image => $image
@@ -114,7 +121,20 @@ readonly class FileSystem
         );
     }
 
-    private static function getCacheKey(string $prefix, BaseFileSystem $file): string
+    /**
+     * @return Generator<array{file: FileDTO, size: null|FileSize, hashes: null|Hashes}>
+     * @throws InvalidArgumentException
+     */
+    public function iterate(Directory $directory): Generator
+    {
+        foreach ($directory->list()->storages() as $storage) {
+            if (null !== $data = $this->getDTOs($storage, false)) {
+                yield $data;
+            }
+        }
+    }
+
+    public static function getCacheKey(string $prefix, BaseFileSystem $file): string
     {
         return sprintf(
             '%s_%s-%d',

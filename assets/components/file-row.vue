@@ -1,6 +1,11 @@
 <template>
-  <tr v-on:click="openFile">
-    <FileQuickview :file="fileObj" :url="url"/>
+  <tr
+      v-on:click="openFile"
+      @mouseover="isHovering=true"
+      @mouseout="isHovering=false"
+      @click="isClicked=true"
+  >
+    <FileQuickview :file="fileObj" :url="url" :is-hovering="isHovering" :is-clicked="isClicked"/>
     <FileSize :size="sizeObj" :url="url"/>
     <FileTime :file="fileObj"></FileTime>
     <FileActions></FileActions>
@@ -16,6 +21,7 @@ import FileActions from "@/components/file-row/file-actions.vue";
 import FileModel from "@/models/file";
 import FileSizeModel from "@/models/file-size";
 import FileHashesModel from "@/models/file-hashes";
+import {openUrl} from "@/modules/helper";
 
 export default {
   name: "FileRow",
@@ -27,6 +33,7 @@ export default {
     hashes: {type: Object, required: false},
     previewSize: {type: Number, default: 40}
   },
+  data: () => ({isHovering: false, isClicked: false}),
   computed: {
     fileObj: function () {
       // noinspection JSCheckFunctionSignatures
@@ -43,12 +50,7 @@ export default {
   },
   methods: {
     openFile: function (event) {
-      window.open(
-          this.url,
-          (event.metaKey || event.which === 2)
-              ? '_target'
-              : '_self'
-      )
+      openUrl(this.url, event);
     }
   }
 }

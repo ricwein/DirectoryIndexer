@@ -1,7 +1,8 @@
 <template>
   <th scope="row">
     <i v-if="file.type === 'dir'"
-       class="icon fa-solid fa-folder fa-xl bg-slate-800"
+       class="icon fa-2xl"
+       :class="{'fa-solid': isHovering, 'fa-regular': !isHovering, 'fa-folder-closed': !isClicked, 'fa-folder-open': isClicked}"
        :style="{width: `${previewSize}px`, height: `${previewSize}px`}"
     ></i>
     <img v-else-if="file.fileType === 'image'"
@@ -29,7 +30,9 @@ export default {
   props: {
     url: {type: String, required: true},
     file: {type: File, required: true},
-    previewSize: {type: Number, default: 40}
+    previewSize: {type: Number, default: 40},
+    isHovering: {type: Boolean, default: false},
+    isClicked: {type: Boolean, default: false},
   },
   computed: {
     previewAlt: function () {
