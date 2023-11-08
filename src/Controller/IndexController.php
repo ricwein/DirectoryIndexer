@@ -2,17 +2,13 @@
 
 namespace App\Controller;
 
-use App\Model\DTO\File as FileDTO;
-use App\Model\DTO\Hashes;
 use App\Service\FileSystem;
 use DateTimeImmutable;
-use Generator;
 use Psr\Cache\InvalidArgumentException;
 use ricwein\FileSystem\Directory;
 use ricwein\FileSystem\Enum\Hash;
-use ricwein\FileSystem\Enum\Time;
 use ricwein\FileSystem\File;
-use ricwein\FileSystem\Model\FileSize;
+use ricwein\FileSystem\Path;
 use ricwein\FileSystem\Storage;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -154,20 +150,36 @@ class IndexController extends AbstractController
     }
 
     /**
+     * @param Directory $directory
+     * @return array<Path>
+     */
+    private function getPathTrail(Directory $directory): array
+    {
+        $dirs = array_filter(explode(DIRECTORY_SEPARATOR, $directory->getPath()->getRelativePath($this->rootPath)));
+
+        $paths = [];
+        $previousTrail = '';
+        foreach ($dirs as $dir) {
+            $paths[] = new Path($this->rootPath, $previousTrail, $dir);
+            $previousTrail .= "/$dir";
+        }
+
+        return $paths;
+    }
+
+    /**
      * @throws InvalidArgumentException
-     * @noinspection PhpParamsInspection
      */
     private function viewDirectory(Directory $directory): Response
     {
-        $isAtRootLevel = rtrim($directory->getPath()->getRealPath(), '/') === rtrim($this->rootPath, '/');
-        $parent = $isAtRootLevel ? null : (new Directory(clone $directory->storage()))->up();
         $directoryIterator = $this->fileSystemService->iterate(directory: $directory);
-
+        $trail = $this->getPathTrail($directory);
         return $this->render('pages/index.html.twig', [
             'rootPath' => $this->rootPath,
             'files' => $directoryIterator,
             'directory' => $directory,
-            'parentDir' => $parent,
+            'parentTrail' => $trail,
+            'parentPath' => empty($trail) ? null : new Path($directory->getPath(), '../'),
         ]);
     }
 }

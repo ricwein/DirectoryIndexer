@@ -1,7 +1,6 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-    {# @var parentDir \ricwein\FileSystem\Directory #}
     <div class="sm:px-0 md:px-6 lg:px-12 xl:px-30 mt-12 mb-12">
         <table class="file-table">
             <thead>
@@ -13,9 +12,9 @@
             </tr>
             </thead>
             <tbody>
-            {% if parentDir is not null %}
+            {% if parentPath is not null %}
                 <tr is="vue:parent-row"
-                    url="{{ url('app_index', {path: parentDir.path.relativePath(rootPath)}) }}"
+                    url="{{ url('app_index', {path: parentPath.relativePath(rootPath)}) }}"
                 ></tr>
             {% endif %}
             {% for data in files %}

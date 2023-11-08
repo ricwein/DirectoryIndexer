@@ -17,13 +17,10 @@
 
 <body class="dark:bg-gray-900">
 {% block navbar %}
-    {# @var directory \ricwein\FileSystem\Directory #}
     <nav class="bg-white border-gray-200 px-2 h-24 sm:px-4 py-2.5 rounded dark:bg-gray-900 sticky top-0 z-30">
         <div class="container flex flex-wrap items-center justify-between mx-auto">
 
-            <a href="{{ url('app_index', {path: ''}) }}" class="flex items-center">
-                <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">/{{ directory.path.relativePathToSafePath }}</span>
-            </a>
+            {% include 'components/breadcrumbs.html.twig' with {parentTrail} only %}
 
             <button data-collapse-toggle="navbar-default"
                     type="button"

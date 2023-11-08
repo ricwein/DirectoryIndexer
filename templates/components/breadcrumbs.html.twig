@@ -1,0 +1,30 @@
+<nav class="flex" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+            <a href="/" class="inline-flex items-center">
+                <i class="fa-solid fa-house text-gray-300 hover:text-blue-600 dark:hover:text-indigo-600"></i>
+            </a>
+        </li>
+        {# @var parentDir \ricwein\FileSystem\Path #}
+        {% for parentDir in parentTrail %}
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-3 h-3 text-gray-500 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                    </svg>
+                    {% if not loop.last %}
+                        <a href="{{ url('app_index', {path: parentDir.relativePathToSafePath}) }}"
+                           class="ml-1 text-sm font-medium md:ml-2 text-gray-400 hover:text-blue-600 dark:hover:text-indigo-600"
+                        >
+                            {{ parentDir.filename }}
+                        </a>
+                    {% else %}
+                        <span class="ml-1 text-sm font-medium md:ml-2 text-white">
+                            {{ parentDir.filename }}
+                        </span>
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ol>
+</nav>
