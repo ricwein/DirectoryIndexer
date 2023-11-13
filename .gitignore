@@ -1,5 +1,14 @@
+.*
+~*
+!/.gitignore
+
+*~
+.Trash-*
+*.DS_Store
+._*
+
 /public/files
-/docker-compose.override.yml
+docker-compose.override.yml
 /.idea
 
 ###> symfony/framework-bundle ###

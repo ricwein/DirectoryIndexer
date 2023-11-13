@@ -11,7 +11,7 @@ use ricwein\FileSystem\File;
 use ricwein\FileSystem\Path;
 use ricwein\FileSystem\Storage;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -80,7 +80,7 @@ class IndexController extends AbstractController
 
         $response->headers->set(
             key: 'Content-Type',
-            values: $storage->getFileType() ?? 'application/octet-stream'
+            values: $storage->getFileType(true) ?? 'application/octet-stream'
         );
         $response
             ->setLastModified(DateTimeImmutable::createFromFormat('U', $storage->getTime()))
@@ -97,19 +97,20 @@ class IndexController extends AbstractController
 
     private function viewFile(File $file): Response
     {
-        $response = new StreamedResponse(function () use ($file): void {
-            $file->stream();
-        });
+        $response = new BinaryFileResponse($file->getPath());
 
-        $response->headers->set('Content-Type', $file->getType(true) ?? 'application/octet-stream');
         $response->headers->set(
-            'Content-Disposition',
-            HeaderUtils::makeDisposition(
-                HeaderUtils::DISPOSITION_ATTACHMENT,
-                $file->getPath()->getFilename(),
-                $file->getPath()->getEscapedFilename(),
-            )
+            key: 'Content-Type',
+            values: $file->getType(true) ?? 'application/octet-stream'
         );
+        $response
+            ->setLastModified(DateTimeImmutable::createFromFormat('U', $file->getTime()))
+            ->setPublic()
+            ->setEtag(
+                md5(
+                    $file->getTime() . $file->getHash(Hash::FILEPATH, 'md5')
+                )
+            );
 
         return $response;
     }
