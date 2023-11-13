@@ -19,8 +19,9 @@
             {% endif %}
             {% for data in files %}
                 <tr is="vue:file-row"
-                    :file="{{ data.file | json_encode }}"
-                    :size="{{ data.size | json_encode }}"
+                    :file='{{ data.file | json_encode | raw }}'
+                    :size='{{ data.size | json_encode | raw }}'
+                    :hashes='{{ data.hashes | json_encode | raw }}'
                     previewSize="40"
                     url="{{ url('app_index', {path: data.file.file.path.relativePath(rootPath)}) }}"
                 ></tr>

@@ -12,12 +12,10 @@ use ricwein\FileSystem\Path;
 use ricwein\FileSystem\Storage;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Annotation\Route;
 
 class IndexController extends AbstractController
@@ -97,39 +95,6 @@ class IndexController extends AbstractController
 
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    #[Route(path: '/{path}', name: 'app_file_info', requirements: ['path' => '.*'], methods: 'OPTIONS')]
-    public function viewInfo(Request $request, string $path = ''): Response
-    {
-        $storage = new Storage\Disk($this->rootPath, $path);
-        if (null === $file = $this->fileSystemService->get($storage)) {
-            return new Response('File not found.', 404);
-        }
-
-        if (null !== $attribute = $request->query->get('attr')) {
-            return new JsonResponse(
-                data: match ($attribute) {
-                    'size' => $this->fileSystemService->getSize($file, true),
-                    'hashes' => $this->fileSystemService->getHashes($file, true),
-                    default => throw new HttpException(400, "Invalid attribute '$attribute' requested."),
-                },
-                status: 200
-            );
-        }
-
-        $hashes = $file->isDir() ? [] : array_map(
-            static fn(string $algo) => $file->getHash(algo: $algo),
-            ['md5' => 'md5', 'sha1' => 'sha1', 'sha256' => 'sha256', 'sha512' => 'sha512']
-        );
-
-        return $this->render('pages/fileInfo.html.twig', [
-            'file' => $file,
-            'hashes' => $hashes,
-        ]);
-    }
-
     private function viewFile(File $file): Response
     {
         $response = new StreamedResponse(function () use ($file): void {
@@ -174,7 +139,7 @@ class IndexController extends AbstractController
     {
         $directoryIterator = $this->fileSystemService->iterate(directory: $directory);
         $trail = $this->getPathTrail($directory);
-        return $this->render('pages/index.html.twig', [
+        return $this->render('pages/directory.html.twig', [
             'rootPath' => $this->rootPath,
             'files' => $directoryIterator,
             'directory' => $directory,

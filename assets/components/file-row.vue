@@ -7,8 +7,8 @@
   >
     <FileQuickview :file="fileObj" :url="url" :is-hovering="isHovering" :is-clicked="isClicked"/>
     <FileSize :size="sizeObj" :url="url"/>
-    <FileTime :file="fileObj"></FileTime>
-    <FileActions></FileActions>
+    <FileTime :file="fileObj"/>
+    <FileActions :file="fileObj" :size="sizeObj" :hashes="hashesObj" :url="url"/>
   </tr>
 </template>
 

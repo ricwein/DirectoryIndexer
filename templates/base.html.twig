@@ -17,14 +17,14 @@
 
 <body class="dark:bg-gray-900">
 {% block navbar %}
-    <nav class="bg-white border-gray-200 px-2 h-24 sm:px-4 py-2.5 rounded dark:bg-gray-900 sticky top-0 z-30">
+    <nav class="bg-white border-gray-200 px-2 h-24 sm:px-4 py-2.5 dark:bg-gray-900 sticky top-0 z-30">
         <div class="container flex flex-wrap items-center justify-between mx-auto">
 
             {% include 'components/breadcrumbs.html.twig' with {parentTrail} only %}
 
             <button data-collapse-toggle="navbar-default"
                     type="button"
-                    class="inline-flex items-center p-2 ml-3 text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+                    class="inline-flex items-center p-2 ml-3 text-sm text-gray-500 md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
                     aria-controls="navbar-default"
                     aria-expanded="false"
             >
@@ -32,10 +32,10 @@
                 <i class="fa-solid fa-bars fa-lg w-6 h-6"></i>
             </button>
             <div class="hidden w-full md:block md:w-auto" id="navbar-default">
-                <ul class="flex flex-col p-4 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:text-sm md:font-medium md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+                <ul class="flex flex-col p-4 mt-4 border border-gray-100 bg-gray-50 md:flex-row md:space-x-8 md:mt-0 md:text-sm md:font-medium md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
                     <li>
                         <a
-                                class="w-full sm:w-auto py-2 px-3 bg-blue-900 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow focus:outline-none"
+                                class="block w-full sm:w-auto py-2 px-3 bg-blue-900 hover:bg-blue-700 text-white text-sm font-semibold shadow focus:outline-none"
                                 type="button"
                                 href="#">
                             <i class="fa-solid fa-ellipsis-h"></i>
@@ -43,7 +43,7 @@
                     </li>
                     <li>
                         <a
-                                class="w-full sm:w-auto py-2 px-3 bg-blue-900 hover:bg-blue-700 text-white text-sm font-semibold rounded-md shadow focus:outline-none cursor-pointer"
+                                class="block w-full sm:w-auto py-2 px-3 bg-blue-900 hover:bg-blue-700 text-white text-sm font-semibold shadow focus:outline-none cursor-pointer"
                                 type="button"
                                 href="#">
                             <i class="fa-solid fa-fw fa-file-archive"></i>
@@ -51,8 +51,13 @@
                         </a>
                     </li>
                     <li>
-                        <div class="relative mx-auto text-gray-600 lg:block hidden">
-                            <input class="border-2 border-gray-300 dark:border-blue-900 bg-white h-10 pl-2 pr-8 rounded-lg text-sm focus:outline-none dark:bg-gray-900" type="search" name="search" placeholder="Search">
+                        <div class="relative mx-auto text-gray-600 block">
+                            <input aria-label="search"
+                                   class="border-2 border-gray-300 dark:border-blue-900 bg-white h-10 pl-2 pr-8 text-sm focus:outline-none dark:bg-gray-900"
+                                   type="search"
+                                   name="search"
+                                   placeholder="Search..."
+                            >
                             <button type="submit" class="absolute right-0 top-0 mt-3 mr-2">
                                 <i class="fa-solid fa-search text-gray-600 h-4 w-4 fill-current"></i>
                             </button>
